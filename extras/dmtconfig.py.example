@@ -1,0 +1,6 @@
+SECRET_KEY = 'PUT YOUR KEY HERE!!'.encode('utf8')
+
+class DevConfig(object):
+    DEBUG = True
+    DEVELOPMENT = True
+    SOLR_ADDRESS= 'http://localhost:8983/solr/'

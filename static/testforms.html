@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tests</title>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"
+        integrity="sha384-6khuMg9gaYr5AxOqhkVIODVIvm9ynTT5J4V1cfthmT+emCG6yVmEZsRHdxlotUnm"
+        crossorigin="anonymous"></script>
+
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="row">
+            <div class="col">
+
+            </div>
+            <div class="col-6">
+
+                <div class="form-group">
+                    <label for="title">title search</label>
+                    <input class="form-control" id="title" aria-describedby="titleHelp" placeholder="DataONE">
+                </div>
+                <div class="form-group">
+                    <label for="keywords">keyword search</label>
+                    <input class="form-control" id="keywords" placeholder="curation">
+                </div>
+
+                <button id="search" class="btn btn-primary">Search</button>
+
+            </div>
+            <div class="col">
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col">
+            </div>
+            <div id="div1" class="col-6">
+            </div>
+            <div class="col">
+            </div>
+        </div>
+
+    </div>
+
+</body>
+<script>
+    $("#search").click(function () {
+        title = $("#title").val();
+        kw = $("#keywords").val()
+        console.log(kw)
+        url = "/api/resources/?"
+        if (kw.length > 0) {
+            url = url + "keywords=" + kw + "&"
+        }
+        if (title.length > 0) {
+            url = url + "title=" + title + "&"
+        }
+
+        console.log(url)
+        htmlput = ""
+        $.ajax({
+            url: url, success: function (result) {
+                for (index = 0; index < result.results.length; index++) {
+                    htmlput = htmlput + "<div>" + result.results[index].title + "</div>";
+                }
+                $("#div1").html(htmlput);
+                console.log(htmlput)
+            }
+        });
+    });
+</script>
+
+</html>
