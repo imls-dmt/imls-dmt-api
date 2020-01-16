@@ -29,7 +29,7 @@ def append_searchstring(searchstring,request,name):
     str: Either the appended search string or the original if the validation fails. 
     """
     if request.args.get(name):
-        if request.args.get(name).isalpha():
+        if ":" not in request.args.get(name):
             return searchstring+" AND "+name+":"+request.args.get(name)
         else:
             return searchstring
