@@ -1,18 +1,32 @@
-from flask import Flask, request
+from flask import Flask, request, redirect, url_for
 import pysolr
 import json
+from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
+import drupal_hash_utility
+
+
 
 #Create flask app
 app = Flask(__name__)
+
 #Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
-#Create a pysolr object for accessing the "learningresources" index
+
+#Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
+users = pysolr.Solr(app.config["SOLR_ADDRESS"]+"users/", timeout=10)
+
+#flask_login implementation. 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+#Drupal hash utility as we will continue to use Drupal hashes.
+drash = drupal_hash_utility.DrupalHashUtility()
 
 
-##################
-#Shared Functions#
-##################
+##############################
+#Shared Functions and classes#
+##############################
 def append_searchstring(searchstring,request,name):
     """ 
     Appends searchstring for most text searches.
@@ -36,6 +50,52 @@ def append_searchstring(searchstring,request,name):
     else:
         return searchstring
 
+class User(UserMixin):
+    """ 
+    Simple user class used for authentication and authorization. 
+    """
+  def __init__(self,id,groups,name):
+    self.id = id
+    self.groups = groups
+    self.name = name
+
+
+#Callback for login_user
+@login_manager.user_loader
+def load_user(user_id):
+    """ 
+    Function used as a callback when login_user is called.
+    Parameters: 
+
+    user_id (UUID): ID of user.
+
+    Returns:
+        User object or None
+    """
+    userobj=users.search("id:\""+user_id+"\"", rows=1)
+    for user in userobj:
+        user.pop('_version_', None)
+        user.pop('hash', None)
+        return User(user['id'],user['groups'],user['name'])
+    return None
+
+
+#internal user with hash
+def get_user(user_name):
+    """
+    Internal function for building a user object with hash from a given username.
+    Parameters: 
+
+        user_name (str): username of valid user.
+
+    Returns:
+        User object with hash.
+    """
+    userobj=users.search("name:\""+user_name+"\"", rows=1)
+    for user in userobj:
+        user.pop('_version_', None)
+        return user
+    return None
 
 
 ######################
@@ -101,7 +161,7 @@ def learning_resources():
         searchstring=append_searchstring(searchstring,request,"type")
         searchstring=append_searchstring(searchstring,request,"author")
         
-        #Number of rows returned
+
         rows=10
         if request.args.get("rows"):
             if request.args.get("rows").isnumeric():
@@ -149,6 +209,45 @@ def learning_resources():
         return "Method not yet implemented"
     if request.method == 'DELETE':
         return "Method not yet implemented"    
+
+
+
+@app.route("/login/", methods = ['POST'])
+def login():
+
+    """ 
+    GET:
+        Validates credentials of users and creates and stores a session.
+        Form Request: 
+
+            username (string):  The users username.
+            password (string):  The users password.
+        Returns: 
+            cookie:session token
+    """
+    user_object=get_user(request.form['username'])
+    if user_object:
+        computed=user_object['hash']
+        passwd=request.form['password']
+        if drash.verify(passwd, computed):
+            login_user(User(user_object['id'],user_object['groups'],user_object['name']))
+            return redirect(url_for('protected'))
+
+    return 'Bad login'
+
+
+@app.route("/logout/")
+@login_required
+def logout():
+    logout_user()
+    return redirect("/")
+
+@app.route('/protected')
+@login_required
+def protected():
+    print(current_user.groups)
+    return 'Logged in as: ' + current_user.name
+
 
 @app.route("/")
 def hello():

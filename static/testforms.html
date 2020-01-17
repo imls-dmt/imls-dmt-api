@@ -58,8 +58,20 @@
 
     </div>
 
+
+
+    <form action='/login/' method='POST'>
+        <input type='text' name='username' id='username' placeholder='username'/>
+        <input type='password' name='password' id='password' placeholder='password'/>
+        <input type='submit' name='submit'/>
+       </form>
+
 </body>
 <script>
+
+
+
+    
     $("#search").click(function () {
         title = $("#title").val();
         kw = $("#keywords").val()
@@ -84,6 +96,12 @@
             }
         });
     });
+
+
+
+
+
+
 </script>
 
 </html>
