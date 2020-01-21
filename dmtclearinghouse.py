@@ -15,7 +15,7 @@ app.config.from_object('dmtconfig.DevConfig')
 #Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
 users = pysolr.Solr(app.config["SOLR_ADDRESS"]+"users/", timeout=10)
-
+taxonomies = pysolr.Solr(app.config["SOLR_ADDRESS"]+"taxonomies/", timeout=10)
 #flask_login implementation. 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -54,10 +54,10 @@ class User(UserMixin):
     """ 
     Simple user class used for authentication and authorization. 
     """
-  def __init__(self,id,groups,name):
-    self.id = id
-    self.groups = groups
-    self.name = name
+    def __init__(self,id,groups,name):
+        self.id = id
+        self.groups = groups
+        self.name = name
 
 
 #Callback for login_user
@@ -160,7 +160,7 @@ def learning_resources():
         searchstring=append_searchstring(searchstring,request,"media_type")
         searchstring=append_searchstring(searchstring,request,"type")
         searchstring=append_searchstring(searchstring,request,"author")
-        
+        searchstring=append_searchstring(searchstring,request,"id")
 
         rows=10
         if request.args.get("rows"):
@@ -210,7 +210,41 @@ def learning_resources():
     if request.method == 'DELETE':
         return "Method not yet implemented"    
 
+@app.route("/api/vocabularies/", methods = ['GET'])
+def vocabularies():
+    if request.method == 'GET':
+        searchstring="*:*"
+        returnval= json.loads('{ "documentation":"API documentation string will go here","names":[]}')
+        if len(request.args)>0:
+            if request.args.get("names")=="true":
+                
+                results=taxonomies.search("*:*")
+                for result in results:
+                    returnval["names"].append(result["name"])
+                return returnval
+            else:
+                searchstring=append_searchstring(searchstring,request,"name")
+                searchstring=append_searchstring(searchstring,request,"values")
+                searchstring=append_searchstring(searchstring,request,"id")
+                returnval= json.loads('{ "documentation":"API documentation string will go here","results":[]}')
+                results=taxonomies.search(searchstring)
+                for result in results:
+                    result.pop('_version_', None)
+                    returnval["results"].append(result)
+                returnval['hits']=results.hits
+                returnval['hits-returned']=len(results)
+                return returnval
+        else:
+            returnval= json.loads('{ "documentation":"API documentation string will go here","results":[]}')
+            results=taxonomies.search("*:*")
+            for result in results:
+                result.pop('_version_', None)
+                returnval["results"].append(result)
+            returnval['hits']=results.hits
+            returnval['hits-returned']=len(results)
+            return returnval
 
+    
 
 @app.route("/login/", methods = ['POST'])
 def login():
@@ -247,6 +281,7 @@ def logout():
 def protected():
     print(current_user.groups)
     return 'Logged in as: ' + current_user.name
+
 
 
 @app.route("/")
