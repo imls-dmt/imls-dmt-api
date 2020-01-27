@@ -133,6 +133,12 @@ def generate_documentation(docstring,document,request):
                 j=json.loads(line.split(":",1)[1])
                 docjson['gettablefieldnames']=j                
 
+
+    print(docjson)
+    if document=="documentation.md":
+        resp=make_response(render_template(document, docjson=docjson))
+        resp.headers['Content-type'] = 'text/markdown; charset=UTF-8'
+        return resp
     return render_template(document, docjson=docjson)
 
 ######################
