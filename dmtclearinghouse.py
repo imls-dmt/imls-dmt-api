@@ -1,9 +1,9 @@
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, render_template, make_response
 import pysolr
 import json
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
 import drupal_hash_utility
-
+from docstring_parser import parse
 
 
 #Create flask app
