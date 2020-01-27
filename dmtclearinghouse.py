@@ -209,6 +209,8 @@ def learning_resources():
         return "Method not yet implemented"
     if request.method == 'DELETE':
         return "Method not yet implemented"    
+    #default return for HEAD
+    return "HEAD"    
 
 @app.route("/api/vocabularies/", methods = ['GET'])
 def vocabularies():
