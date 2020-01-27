@@ -200,7 +200,7 @@ def learning_resources():
             result.pop('contributors.type', None)
             returnval['results'].append(result)
 
-        returnval['hits']=results.hits
+        returnval['hits-total']=results.hits
         returnval['hits-returned']=len(results)
         return returnval
     if request.method == 'POST':
