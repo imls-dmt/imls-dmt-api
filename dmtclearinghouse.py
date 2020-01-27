@@ -97,6 +97,43 @@ def get_user(user_name):
         return user
     return None
 
+#Documentation generation
+def generate_documentation(docstring,document,request):
+    request_rule=request.url_rule
+    """
+    Internal function for building documentation from docstring
+    Parameters: 
+
+        docstring (str): docstring with api lines.
+
+    Returns:
+        HTML or Markdown
+    """
+    current_route=""
+    docjson=json.loads('{"methods":{}}')
+    for rule in app.url_map.iter_rules():
+        if request_rule==rule:
+            print(rule)
+            docjson['current_route']=str(request.url_rule).split("<")[0]
+            print(rule.methods)
+            for r in rule.methods:
+                print(json.loads('{"'+r+'":[]}'))
+                docjson['methods'][r]=[]
+
+    #parse docstring
+    # print(docjson)
+    fields=[]
+    for line in docstring.splitlines():
+        if line.lstrip()[0:2]==";;":
+            if line.lstrip().split(":",1)[0]==";;field":
+                j=json.loads(line.split(":",1)[1])
+                #Due to documentation route will always have a 'GET' method.
+                docjson['methods']['GET'].append(j)
+            if line.lstrip().split(":",1)[0]==";;gettablefieldnames":
+                j=json.loads(line.split(":",1)[1])
+                docjson['gettablefieldnames']=j                
+
+    return render_template(document, docjson=docjson)
 
 ######################
 #Routes and Handelers#

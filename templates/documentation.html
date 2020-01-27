@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" src="/static/renderjson/renderjson.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+
+    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script> -->
+
+    <style>
+        .rotate-45 {
+            -webkit-transform: rotate(-90deg);
+            -moz-transform: rotate(-90deg);
+            -ms-transform: rotate(-90deg);
+            -o-transform: rotate(-90deg);
+            transform: rotate(-90deg);
+        }
+    </style>
+
+    <script>
+        $(document).ready(function () {
+            $('.collapsible').collapsible();
+
+            $(".collapsible").click(function () {
+                $( "#expand" ).toggleClass( "rotate-45" )
+            });
+
+
+
+            {% if 'GET' in docjson.methods %}
+            $("#GET").click(function () {
+                $.ajax({
+                    url: $('#tryitget').val(),
+                    type: 'GET',
+                    success: function (data, status) {
+                        if (status == 'success') {
+                            document.getElementById("result").appendChild(renderjson(data));
+                        };
+
+                    }
+                });
+                // $.get($('#tryitget').val(), function (data, status) {
+                //     if (status=='success'){
+                //         console.log(status)
+                //     };
+                //     document.getElementById("result").appendChild(renderjson(data));
+                // });
+            });
+            {% endif %}
+
+        });
+
+
+
+    </script>
+</head>
+
+
+<body>
+    {% if 'GET' in docjson.methods %}
+    <div class="row">
+        <div class="col s3"></div>
+        <div class="col s6">
+            <div class="card ">
+                <div class="card-content ">
+                    <span class="card-title">GET</span>
+                    <p>GET method for {{docjson.current_route}}</p>
+                </div>
+                <div class="card-action">
+                    <ul class="collapsible">
+                        <li>
+                            <div class="collapsible-header"><i id="expand"
+                                    class="material-icons">expand_more</i>Available Fields and Examples</div>
+                            <div class="collapsible-body">
+                                JS example:
+                                <pre class="prettyprint">
+$.ajax({
+    url: "{{docjson.current_route}}?{{docjson.methods.GET[0].name}}={{docjson.methods.GET[0].example}}",
+    type: 'GET',
+    success: function (data, status) {
+        if (status == 'success') {
+            //If the request was successful parse the data.
+            //This example will print out the title of the first result to console
+            console.log(data.results[0].title)
+        }else{
+            //If the request failed, handle this response.
+            console.log(status)
+        };
+    }
+});                             </pre>
+                                Available Fields
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            {% for name in docjson.gettablefieldnames %}
+                                            <th>{{name}}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% for field in docjson.methods.GET %}
+                                        <tr>
+                                            <td>{{field.name}}</td>
+                                            <td>{{field.type}}</td>
+                                            <td> <a
+                                                    href="{{docjson.current_route}}?{{field.name}}={{field.example}}">{{field.example}}</a>
+                                            </td>
+                                            <td>{{field.description}}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </li>
+
+                    </ul>
+
+                    <br><br>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="/api/resources/?title=DataONE" id="tryitget" type="text" class="validate">
+                            <label class="active" for="tryitget">Try it!</label>
+                        </div>
+                    </div>
+                    <button class="waves-effect waves-light btn" id="GET">GET</button>
+
+                    <div class="card " style="overflow: scroll;">
+                        <div id="result" style="margin: 20px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col s3"></div>
+
+    </div>
+    {% endif %}
+
+</body>
+
+
+</html>
