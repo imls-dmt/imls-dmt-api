@@ -163,10 +163,9 @@ def learning_resources():
         searchstring=append_searchstring(searchstring,request,"id")
 
         rows=10
-        if request.args.get("rows"):
-            if request.args.get("rows").isnumeric():
-                rows=int(request.args.get("rows"))
- 
+        if request.args.get("limit"):
+            if request.args.get("limit").isnumeric():
+                rows=int(request.args.get("limit"))
         results=resources.search(searchstring, rows=rows)
         
         for result in results:
