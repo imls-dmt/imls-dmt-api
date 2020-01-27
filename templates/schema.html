@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</head>
+
+
+<body>
+        {% if html %}
+    <div class="row">
+        <div class="col s3"></div>
+        <div class="col s6">
+        {% endif %}
+            <div class="card ">
+                <div class="card-content ">
+                    <span class="card-title">Schema for the '{{collection}}' collection:</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th style="text-align: center;">Required</th>
+                            <th style="text-align: center;">Multi-Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field in schemajson.fields %}
+                        <tr>
+                            <td>{{field.name}}</td>
+                            <td>{{field.type}}</td>
+                            {% if field.required %}
+                            <td style="text-align: center;"><i style="color: rgb(26, 201, 26);"
+                                    class=" material-icons">check_circle</i></td>
+                            {% else %}
+                            <td style="text-align: center;"><i style="color: rgb(201, 67, 26);"
+                                    class=" material-icons">cancel</i></td>
+
+                            {% endif %}
+                            {% if field.multivalue %}
+                            <td style="text-align: center;"><i style="color: rgb(26, 201, 26);"
+                                    class=" material-icons">check_circle</i></td>
+                            {% else %}
+                            <td style="text-align: center;"><i style="color: rgb(201, 67, 26);"
+                                    class=" material-icons">cancel</i></td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if html %}
+        </div>
+        <div class="col s3"></div>
+    </div>
+    {% endif %}
+</body>
+
+</html>

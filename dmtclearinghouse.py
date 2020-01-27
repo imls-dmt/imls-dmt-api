@@ -4,8 +4,8 @@ import json
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
 import drupal_hash_utility
 from docstring_parser import parse
-
-
+import requests
+from weasyprint import HTML
 #Create flask app
 app = Flask(__name__)
 
@@ -298,6 +298,42 @@ def learning_resources(document):
         return "Method not yet implemented"    
     #default return for HEAD
     return "HEAD"    
+
+
+@app.route("/api/schema/<collection>.<returntype>", methods = ['GET'])
+@login_required
+def schema(collection,returntype):
+
+    typemap={"text_general":"General Text","boolean":"Boolean","pdate":"Datetime","string":"Exact Match String","pfloat":"Floating Point"}
+    collectionmap={"resources":"learningresources","learningresources":"learningresources","vocabularies":"taxonomies","taxonomies":"taxonomies","user":"users","users":"users"}
+    r = requests.get(app.config["SOLR_ADDRESS"]+collectionmap[collection]+"/schema/fields")
+    schemajson=json.loads('{"description":"Learning Resources Schema", "fields":[]}')
+    if r.json():
+        for field in r.json()['fields']:
+            if not field['name'].startswith( '_' ):
+                thisfield=json.loads("{}")
+                thisfield['name']=field['name']
+                thisfield['type']=typemap[field['type']]
+                schemajson['fields'].append(thisfield)
+                thisfield['multivalue']=field['multiValued']
+                thisfield['required']=field['required']
+        if returntype=="json":
+            return(schemajson)
+        if returntype=="md":
+            resp=make_response(render_template("schema.md", schemajson=schemajson, collection=collection))
+            resp.headers['Content-type'] = 'text/markdown; charset=UTF-8'
+            return resp
+            # return render_template("schema.md", schemajson=schemajson, collection=collection)
+        if returntype=="html":
+            return render_template("schema.html", schemajson=schemajson, collection=collection, html=True)
+        if returntype=="pdf":
+            schemapdfhtml=HTML(string=render_template("schema.html", schemajson=schemajson, collection=collection))
+            resp=make_response(schemapdfhtml.write_pdf())
+            resp.headers['Content-type'] = 'application/pdf'
+            return resp
+    return(schemajson)
+
+
 
 @app.route("/api/vocabularies/", methods = ['GET'])
 def vocabularies():
