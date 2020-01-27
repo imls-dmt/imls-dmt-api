@@ -102,9 +102,10 @@ def get_user(user_name):
 #Routes and Handelers#
 ######################
 
-#Resrouce interaction
-@app.route("/api/resources/", methods = ['GET'])
-def learning_resources():
+#Resource interaction
+@app.route("/api/resources/", defaults={'document': None}, methods = ['GET'])
+@app.route("/api/resources/<document>", methods = ['GET'])
+def learning_resources(document):
 
     """ 
     GET:
