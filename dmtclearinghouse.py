@@ -122,6 +122,41 @@ def learning_resources():
         Not yet implemented
     DELETE
         Not yet implemented
+    
+    
+
+    ;;field:{"name":"title","type":"string","example":"DataONE","description":"The title of the learning resource."}
+    ;;field:{"name":"url","type":"string","example":"dataoneorg.github.io","description":""}
+    ;;field:{"name":"access_cost","type":"float","example":"1.0","description":""}
+    ;;field:{"name":"submitter_name","type":"string","example":"\\\"Amber E Budden\\\"","description":""}
+    ;;field:{"name":"submitter_email","type":"string","example":"example@example.com","description":""}
+    ;;field:{"name":"author","type":"string","example":"Nhoebelheinrich","description":""}
+    ;;field:{"name":"author_org","type":"string","example":"DataONE","description":""}
+    ;;field:{"name":"contact","type":"string","example":"\\\"Nancy J.  Hoebelheinrich\\\"","description":""}
+    ;;field:{"name":"contact_org","type":"string","example":"NASA","description":""}
+    ;;field:{"name":"abstract.data","type":"string","example":"researchers","description":""}
+    ;;field:{"name":"subject","type":"string","example":"Aerospace","description":""}
+    ;;field:{"name":"keywords","type":"string","example":"\\\"Data management\\\"","description":""}
+    ;;field:{"name":"licence","type":"string","example":"\\\"Creative Commons\\\"","description":""}
+    ;;field:{"name":"usage_rights","type":"string","example":"USGS","description":""}
+    ;;field:{"name":"citation.data","type":"string","example":"research","description":""}
+    ;;field:{"name":"locator.data","type":"string","example":"\\\"10.5281/zenodo.239090\\\"","description":""}
+    ;;field:{"name":"locator.type","type":"string","example":"DOI","description":""}
+    ;;field:{"name":"publisher","type":"string","example":"\\\"Oak Ridge National Laboratory\\\"","description":""}
+    ;;field:{"name":"version","type":"string","example":"\\\"1.0\\\"","description":""}
+    ;;field:{"name":"access_features","type":"string","example":"Transformation","description":""}
+    ;;field:{"name":"language_primary","type":"string","example":"es","description":""}
+    ;;field:{"name":"languages_secondary","type":"string","example":"fr","description":""}
+    ;;field:{"name":"ed_framework","type":"string","example":"\\\"FAIR Data Principles\\\"","description":""}
+    ;;field:{"name":"ed_framework_dataone","type":"string","example":"Collect","description":""}
+    ;;field:{"name":"ed_framework_fair","type":"string","example":"Findable","description":""}
+    ;;field:{"name":"target_audience","type":"string","example":"\\\"Research scientist\\\"","description":""}
+    ;;field:{"name":"purpose","type":"string","example":"\\\"Professional Development\\\"","description":""}
+    ;;field:{"name":"completion_time","type":"string","example":"\\\"1 hour\\\"","description":""}
+    ;;field:{"name":"media_type","type":"string","example":"\\\"Moving Image\\\"","description":""}
+    ;;field:{"name":"type","type":"string","example":"\\\"Learning Activity\\\"","description":""}
+    ;;field:{"name":"limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 10"}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
     """
     if request.method == 'GET':
         returnval= json.loads('{ "documentation":"API documentation string will go here","results":[]}')
