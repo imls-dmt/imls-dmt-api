@@ -202,8 +202,17 @@ def learning_resources(document):
     ;;field:{"name":"limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 10"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     """
+    if document is None:
+        document='search.json'
+    allowed_documents=['search.json','documentation.html','documentation.md']
+    
+    if document not in  allowed_documents:
+        return render_template('bad_document.html'), 400
+
     if request.method == 'GET':
-        returnval= json.loads('{ "documentation":"API documentation string will go here","results":[]}')
+        if document!="search.json":
+            return generate_documentation(learning_resources.__doc__,document,request)
+        returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[]}')
         searchstring="status:true"
         
         searchstring=append_searchstring(searchstring,request,"title")
