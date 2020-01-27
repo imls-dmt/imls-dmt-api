@@ -128,7 +128,6 @@ def learning_resources():
         searchstring="status:true"
         
         searchstring=append_searchstring(searchstring,request,"title")
-        searchstring=append_searchstring(searchstring,request,"status")
         searchstring=append_searchstring(searchstring,request,"url")
         searchstring=append_searchstring(searchstring,request,"access_cost")
         searchstring=append_searchstring(searchstring,request,"submitter_name")
