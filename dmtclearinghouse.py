@@ -301,6 +301,21 @@ def learning_resources(document):
     #default return for HEAD
     return "HEAD"    
 
+@app.route("/api/",methods = ['GET'])
+def api():
+    """ 
+    GET:
+        Shows available routes with links to documentation built dynamically.
+    
+
+    Returns: 
+            HTML
+
+    """
+    for rule in app.url_map.iter_rules():
+        print(rule)
+    return("Not yet implemented.")
+
 @app.route("/api/schema/", defaults={'collection': None,'returntype':None}, methods = ['GET'])
 @app.route("/api/schema/<collection>.<returntype>",methods = ['GET'])
 @login_required
@@ -391,7 +406,7 @@ def vocabularies(document):
         Not yet implemented
     DELETE
         Not yet implemented
-
+    
     ;;field:{"name":"id","type":"UUID","example":"35952525-b39c-4b50-a925-2ea52eb928b1","description":"ID of vocabulary"}
     ;;field:{"name":"name","type":"string","example":"\\\"Organizations\\\"","description":"Name of vocabulary"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
