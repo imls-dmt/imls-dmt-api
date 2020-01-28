@@ -305,10 +305,41 @@ def learning_resources(document):
 @login_required
 def schema(collection,returntype):
     
+    """ 
+    GET:
+        Builds Solr schema definition for a given collection from running config and returns selected return type.
+    
+        arguments: 
+
+            collection (string):  An existing collection or 'documentation'
+            returntype (string):  The mime type you want returned eg. html or pdf
+        Returns: 
+            returntype
+    ;;argument:{"name":"documentation.html","description":"Show schema for the resources collection."}
+    ;;argument:{"name":"documentation.md","description":"Show schema for the resources collection."}
+    ;;argument:{"name":"resources.html","description":"Show schema for the resources collection."}
+    ;;argument:{"name":"users.html","description":"Show schema for the users collection."}
+    ;;argument:{"name":"vocabularies.html","description":"Show schema for the vocabularies collection."}
+    ;;argument:{"name":"resources.md","description":"Return schema for the resources collection as Markdown"}
+    ;;argument:{"name":"users.md","description":"Return schema for the users collection as Markdown."}
+    ;;argument:{"name":"vocabularies.md","description":"Return schema for the vocabularies collection as Markdown."}
+    ;;argument:{"name":"resources.pdf","description":"Return schema for the resources collection as PDF."}
+    ;;argument:{"name":"users.pdf","description":"Return schema for the users collection as PDF."}
+    ;;argument:{"name":"vocabularies.pdf","description":"Return schema for the vocabularies collection as PDF."}
+    
+    """
+
+
+    allowed_collections=['documentation',"resources","learningresources","vocabularies","taxonomies","user","users"]
+    allowed_types=['html']
+
     if collection not in  allowed_collections or collection is None:
         return render_template('bad_document.html',example="api/schema/documentation.html"), 400
 
     
+    if collection=="documentation":
+            return generate_documentation(schema.__doc__,collection+"."+returntype,request)
+
     today = date.today().strftime("%d/%m/%Y")
     typemap={"text_general":"General Text","boolean":"Boolean","pdate":"Datetime","string":"Exact Match String","pfloat":"Floating Point"}
     collectionmap={"resources":"learningresources","learningresources":"learningresources","vocabularies":"taxonomies","taxonomies":"taxonomies","user":"users","users":"users"}
