@@ -6,6 +6,7 @@ import drupal_hash_utility
 from docstring_parser import parse
 import requests
 from weasyprint import HTML
+from datetime import date
 #Create flask app
 app = Flask(__name__)
 
@@ -295,7 +296,7 @@ def learning_resources(document):
     if request.method == 'PUT':
         return "Method not yet implemented"
     if request.method == 'DELETE':
-        return "Method not yet implemented"    
+        return "Method not yet implemented"
     #default return for HEAD
     return "HEAD"    
 
@@ -303,7 +304,9 @@ def learning_resources(document):
 @app.route("/api/schema/<collection>.<returntype>", methods = ['GET'])
 @login_required
 def schema(collection,returntype):
-
+    
+    
+    today = date.today().strftime("%d/%m/%Y")
     typemap={"text_general":"General Text","boolean":"Boolean","pdate":"Datetime","string":"Exact Match String","pfloat":"Floating Point"}
     collectionmap={"resources":"learningresources","learningresources":"learningresources","vocabularies":"taxonomies","taxonomies":"taxonomies","user":"users","users":"users"}
     r = requests.get(app.config["SOLR_ADDRESS"]+collectionmap[collection]+"/schema/fields")
@@ -325,7 +328,7 @@ def schema(collection,returntype):
             return resp
             # return render_template("schema.md", schemajson=schemajson, collection=collection)
         if returntype=="html":
-            return render_template("schema.html", schemajson=schemajson, collection=collection, html=True)
+            return render_template("schema.html", schemajson=schemajson, collection=collection, html=True,date=today)
         if returntype=="pdf":
             schemapdfhtml=HTML(string=render_template("schema.html", schemajson=schemajson, collection=collection))
             resp=make_response(schemapdfhtml.write_pdf())
