@@ -300,11 +300,14 @@ def learning_resources(document):
     #default return for HEAD
     return "HEAD"    
 
-
-@app.route("/api/schema/<collection>.<returntype>", methods = ['GET'])
+@app.route("/api/schema/", defaults={'collection': None,'returntype':None}, methods = ['GET'])
+@app.route("/api/schema/<collection>.<returntype>",methods = ['GET'])
 @login_required
 def schema(collection,returntype):
     
+    if collection not in  allowed_collections or collection is None:
+        return render_template('bad_document.html',example="api/schema/documentation.html"), 400
+
     
     today = date.today().strftime("%d/%m/%Y")
     typemap={"text_general":"General Text","boolean":"Boolean","pdate":"Datetime","string":"Exact Match String","pfloat":"Floating Point"}
