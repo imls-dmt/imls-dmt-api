@@ -429,7 +429,7 @@ def vocabularies(document):
                 returnval['hits-returned']=len(results)
                 return returnval
         else:
-            returnval= json.loads('{ "documentation":"API documentation string will go here","results":[]}')
+            returnval= json.loads('{ "documentation":"'+request.host_url+'api/vocabularies/documentation.html","results":[]}')
             results=taxonomies.search("*:*")
             for result in results:
                 result.pop('_version_', None)
