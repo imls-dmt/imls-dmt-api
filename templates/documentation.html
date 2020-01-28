@@ -11,9 +11,6 @@
     <script type="text/javascript" src="/static/renderjson/renderjson.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
 
-    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script> -->
 
     <style>
         .rotate-45 {
@@ -69,14 +66,20 @@
     <div class="row">
         <div class="col s3"></div>
         <div class="col s6">
+            
             <div class="card ">
+                
                 <div class="card-content ">
                     <span class="card-title">GET</span>
                     <p>GET method for {{docjson.current_route}}</p>
                 </div>
                 <div class="card-action">
+                        <div style="font-size: small;color: gray;">Expand to see working examples. </div>
+
                     <ul class="collapsible">
-                        <li>
+                        
+                        <li >
+                            
                             <div class="collapsible-header"><i id="expand"
                                     class="material-icons">expand_more</i>Available Fields and Examples</div>
                             <div class="collapsible-body">
@@ -96,7 +99,9 @@ $.ajax({
         };
     }
 });                             </pre>
-                                Available Fields
+
+                                <div>Available Fields</div>
+                                <div style="font-size: small;color: gray;">Click on the examples.</div>
                                 <table>
                                     <thead>
                                         <tr>
@@ -128,11 +133,11 @@ $.ajax({
                     <div class="row">
                         <div class="input-field col s12">
                             <input value="/api/resources/?title=DataONE" id="tryitget" type="text" class="validate">
-                            <label class="active" for="tryitget">Try it!</label>
+                            <label class="active" for="tryitget">Try it out. Type your query in the field below and click the GET button. </label>
                         </div>
                     </div>
-                    <button class="waves-effect waves-light btn" id="GET">GET</button>
-
+                    <button class="waves-effect waves-light btn" id="GET">GET</button><span style="font-size: small;color: gray;"><--Click here.</span>
+                    <div>The server responses will appear below. Expand the response to view it.</div>
                     <div class="card " style="overflow: scroll;">
                         <div id="result" style="margin: 20px;"></div>
                     </div>
