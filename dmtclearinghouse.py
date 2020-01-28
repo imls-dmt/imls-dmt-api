@@ -116,13 +116,10 @@ def generate_documentation(docstring,document,request,jsonexample=False):
     docjson=json.loads('{"methods":{}}')
     for rule in app.url_map.iter_rules():
         if request_rule==rule:
-            print(rule)
             docjson['current_route']=str(request.url_rule).split("<")[0]
-            print(rule.methods)
             for r in rule.methods:
                 docjson['methods'][r]=json.loads('{"parameters":[],"arguments":[]}')
 
-    print(docjson)
     fields=[]
     for line in docstring.splitlines():
         if line.lstrip()[0:2]==";;":
