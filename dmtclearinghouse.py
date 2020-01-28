@@ -312,9 +312,15 @@ def api():
             HTML
 
     """
+    rulelist=[]
     for rule in app.url_map.iter_rules():
-        print(rule)
-    return("Not yet implemented.")
+        if "/api/" in rule.rule:
+            if "<" not in rule.rule:
+                if rule.rule!="/api/":
+                    rulelist.append(rule.rule+"documentation.html")
+    return render_template('api.html',rulelist=rulelist)
+
+
 
 @app.route("/api/schema/", defaults={'collection': None,'returntype':None}, methods = ['GET'])
 @app.route("/api/schema/<collection>.<returntype>",methods = ['GET'])
