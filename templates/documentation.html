@@ -44,12 +44,7 @@
 
                     }
                 });
-                // $.get($('#tryitget').val(), function (data, status) {
-                //     if (status=='success'){
-                //         console.log(status)
-                //     };
-                //     document.getElementById("result").appendChild(renderjson(data));
-                // });
+
             });
             {% endif %}
 
@@ -77,29 +72,34 @@
                         <div style="font-size: small;color: gray;">Expand to see working examples. </div>
 
                     <ul class="collapsible">
+                        {% if jsonexample %}<li>{% else %}<li class="active" > {% endif %} 
                         
-                        <li >
-                            
                             <div class="collapsible-header"><i id="expand"
                                     class="material-icons">expand_more</i>Available Fields and Examples</div>
                             <div class="collapsible-body">
                                 JS example:
                                 <pre class="prettyprint">
 $.ajax({
-    url: "{{docjson.current_route}}?{{docjson.methods.GET[0].name}}={{docjson.methods.GET[0].example}}",
+    
+    url: "{{docjson.current_route}}{% if docjson.methods.GET.arguments|length > 0 %}{{docjson.methods.GET.arguments[0].name}}{% endif %}{% if docjson.methods.GET.parameters|length > 0 %}?{{docjson.methods.GET.parameters[0].name}}={{docjson.methods.GET.parameters[0].example}}{% endif %}",
     type: 'GET',
     success: function (data, status) {
         if (status == 'success') {
+            {% if jsonexample %}
             //If the request was successful parse the data.
             //This example will print out the title of the first result to console
             console.log(data.results[0].title)
+            {% else %}
+            //If the request was successful parse the data.
+            console.log(data)
+            {% endif%}
         }else{
             //If the request failed, handle this response.
             console.log(status)
         };
     }
 });                             </pre>
-
+                        {% if docjson.methods.GET.parameters|length > 0 %}
                                 <div>Available Fields</div>
                                 <div style="font-size: small;color: gray;">Click on the examples.</div>
                                 <table>
@@ -112,7 +112,7 @@ $.ajax({
                                     </thead>
 
                                     <tbody>
-                                        {% for field in docjson.methods.GET %}
+                                        {% for field in docjson.methods.GET.parameters %}
                                         <tr>
                                             <td>{{field.name}}</td>
                                             <td>{{field.type}}</td>
@@ -124,15 +124,48 @@ $.ajax({
                                         {% endfor %}
                                     </tbody>
                                 </table>
+                                {% endif %}
+
+
+                                {% if docjson.methods.GET.arguments|length > 0 %}
+                                <div>Available Arguments</div>
+                                <div style="font-size: small;color: gray;">Click on the examples.</div>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                           
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% for field in docjson.methods.GET.arguments %}
+                                        <tr>
+                                            
+                                            
+                                            <td> <a href="{{docjson.current_route}}{{field.name}}">{{field.name}}</a>
+                                            </td>
+                                            <td>{{field.description}}</td>
+                                           
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% endif %}
+
+
+
                             </div>
                         </li>
 
                     </ul>
-
+                    {% if jsonexample %}
                     <br><br>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="/api/resources/?title=DataONE" id="tryitget" type="text" class="validate">
+                            <input value="{{docjson.current_route}}{% if docjson.methods.GET.parameters|length > 0 %}?{{docjson.methods.GET.parameters[0].name}}={{docjson.methods.GET.parameters[0].example}}{% endif %}" id="tryitget" type="text" class="validate">
                             <label class="active" for="tryitget">Try it out. Type your query in the field below and click the GET button. </label>
                         </div>
                     </div>
@@ -141,6 +174,7 @@ $.ajax({
                     <div class="card " style="overflow: scroll;">
                         <div id="result" style="margin: 20px;"></div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
