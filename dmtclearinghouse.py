@@ -208,7 +208,7 @@ def learning_resources(document):
     allowed_documents=['search.json','documentation.html','documentation.md']
     
     if document not in  allowed_documents:
-        return render_template('bad_document.html'), 400
+        return render_template('bad_document.html',example="search.json"), 400
 
     if request.method == 'GET':
         if document!="search.json":
