@@ -372,12 +372,43 @@ def schema(collection,returntype):
     return(schemajson)
 
 
+@app.route("/api/vocabularies/", defaults={'document': None}, methods = ['GET'])
+@app.route("/api/vocabularies/<document>", methods = ['GET'])
+def vocabularies(document):
+    """ 
+    GET:
+        Builds Solr searches and returns results for learning resources.
+    
+        Parameters: 
 
-@app.route("/api/vocabularies/", methods = ['GET'])
-def vocabularies():
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Not yet implemented
+    PUT
+        Not yet implemented
+    DELETE
+        Not yet implemented
+
+    ;;field:{"name":"id","type":"UUID","example":"35952525-b39c-4b50-a925-2ea52eb928b1","description":"ID of vocabulary"}
+    ;;field:{"name":"name","type":"string","example":"\\\"Organizations\\\"","description":"Name of vocabulary"}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    """
+
+    if document is None:
+        document='search.json'
+    allowed_documents=['search.json','documentation.html','documentation.md','documentation.htm']
+    
+    if document not in  allowed_documents:
+        return render_template('bad_document.html',example="search.json"), 400
+
     if request.method == 'GET':
+        if document!="search.json":
+            return generate_documentation(vocabularies.__doc__,document,request,True)
         searchstring="*:*"
-        returnval= json.loads('{ "documentation":"API documentation string will go here","names":[]}')
+        returnval= json.loads('{ "documentation":"'+request.host_url+'api/vocabularies/documentation.html","names":[]}')
         if len(request.args)>0:
             if request.args.get("names")=="true":
                 
