@@ -99,7 +99,7 @@ def get_user(user_name):
     return None
 
 #Documentation generation
-def generate_documentation(docstring,document,request):
+def generate_documentation(docstring,document,request,jsonexample=False):
     request_rule=request.url_rule
     """
     Internal function for building documentation from docstring
@@ -110,6 +110,8 @@ def generate_documentation(docstring,document,request):
     Returns:
         HTML or Markdown
     """
+    if docstring is None:
+        return "Documentation not yet implemented for this route."
     current_route=""
     docjson=json.loads('{"methods":{}}')
     for rule in app.url_map.iter_rules():
@@ -118,29 +120,31 @@ def generate_documentation(docstring,document,request):
             docjson['current_route']=str(request.url_rule).split("<")[0]
             print(rule.methods)
             for r in rule.methods:
-                print(json.loads('{"'+r+'":[]}'))
-                docjson['methods'][r]=[]
+                docjson['methods'][r]=json.loads('{"parameters":[],"arguments":[]}')
 
-    #parse docstring
-    # print(docjson)
+    print(docjson)
     fields=[]
     for line in docstring.splitlines():
         if line.lstrip()[0:2]==";;":
             if line.lstrip().split(":",1)[0]==";;field":
                 j=json.loads(line.split(":",1)[1])
                 #Due to documentation route will always have a 'GET' method.
-                docjson['methods']['GET'].append(j)
+                docjson['methods']['GET']['parameters'].append(j)
+            if line.lstrip().split(":",1)[0]==";;argument":
+                j=json.loads(line.split(":",1)[1])
+                docjson['methods']['GET']['arguments'].append(j)
             if line.lstrip().split(":",1)[0]==";;gettablefieldnames":
                 j=json.loads(line.split(":",1)[1])
                 docjson['gettablefieldnames']=j                
 
 
-    print(docjson)
     if document=="documentation.md":
         resp=make_response(render_template(document, docjson=docjson))
         resp.headers['Content-type'] = 'text/markdown; charset=UTF-8'
         return resp
-    return render_template(document, docjson=docjson)
+    if document=="documentation.htm":
+        return render_template(document, docjson=docjson, jsonexample=jsonexample)
+    return render_template(document, docjson=docjson, jsonexample=jsonexample)
 
 ######################
 #Routes and Handelers#
@@ -205,14 +209,14 @@ def learning_resources(document):
     """
     if document is None:
         document='search.json'
-    allowed_documents=['search.json','documentation.html','documentation.md']
+    allowed_documents=['search.json','documentation.html','documentation.md','documentation.htm']
     
     if document not in  allowed_documents:
         return render_template('bad_document.html',example="search.json"), 400
 
     if request.method == 'GET':
         if document!="search.json":
-            return generate_documentation(learning_resources.__doc__,document,request)
+            return generate_documentation(learning_resources.__doc__,document,request,True)
         returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[]}')
         searchstring="status:true"
         
@@ -304,7 +308,7 @@ def learning_resources(document):
 @app.route("/api/schema/<collection>.<returntype>",methods = ['GET'])
 @login_required
 def schema(collection,returntype):
-    
+
     """ 
     GET:
         Builds Solr schema definition for a given collection from running config and returns selected return type.
@@ -336,7 +340,7 @@ def schema(collection,returntype):
     if collection not in  allowed_collections or collection is None:
         return render_template('bad_document.html',example="api/schema/documentation.html"), 400
 
-    
+
     if collection=="documentation":
             return generate_documentation(schema.__doc__,collection+"."+returntype,request)
 
