@@ -27,7 +27,7 @@
             $('.collapsible').collapsible();
 
             $(".collapsible").click(function () {
-                $( "#expand" ).toggleClass( "rotate-45" )
+                $("#expand").toggleClass("rotate-45")
             });
 
 
@@ -47,6 +47,34 @@
 
             });
             {% endif %}
+            {% if 'POST' in docjson.methods %}
+            $("#POST").click(function () {
+
+                jsondata = $('#tryitpost').val()
+                console.log()
+
+                $.ajax({
+                    type: "POST",
+                    //the url where you want to sent the userName and password to
+                    url: '{{docjson.current_route}}',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    async: false,
+                    //json object to sent to the authentication url
+                    data: JSON.stringify(JSON.parse(jsondata)),
+                    success: function (data) {
+                        console.log(renderjson(data))
+                        document.getElementById("postresult").appendChild(renderjson(data));
+                        // alert("Thanks!");
+                    }
+                })
+
+
+
+
+            });
+            {% endif %}
+
 
         });
 
@@ -61,19 +89,20 @@
     <div class="row">
         <div class="col s3"></div>
         <div class="col s6">
-            
+
             <div class="card ">
-                
+
                 <div class="card-content ">
                     <span class="card-title">GET</span>
                     <p>GET method for {{docjson.current_route}}</p>
                 </div>
                 <div class="card-action">
-                        <div style="font-size: small;color: gray;">Expand to see working examples. </div>
+                    <div style="font-size: small;color: gray;">Expand to see working examples. </div>
 
                     <ul class="collapsible">
-                        {% if jsonexample %}<li>{% else %}<li class="active" > {% endif %} 
-                        
+                        {% if jsonexample %}<li>{% else %}
+                        <li class="active"> {% endif %}
+
                             <div class="collapsible-header"><i id="expand"
                                     class="material-icons">expand_more</i>Available Fields and Examples</div>
                             <div class="collapsible-body">
@@ -99,7 +128,7 @@ $.ajax({
         };
     }
 });                             </pre>
-                        {% if docjson.methods.GET.parameters|length > 0 %}
+                                {% if docjson.methods.GET.parameters|length > 0 %}
                                 <div>Available Fields</div>
                                 <div style="font-size: small;color: gray;">Click on the examples.</div>
                                 <table>
@@ -133,22 +162,22 @@ $.ajax({
                                 <table>
                                     <thead>
                                         <tr>
-                                            
+
                                             <th>Name</th>
                                             <th>Description</th>
-                                           
+
                                         </tr>
                                     </thead>
 
                                     <tbody>
                                         {% for field in docjson.methods.GET.arguments %}
                                         <tr>
-                                            
-                                            
+
+
                                             <td> <a href="{{docjson.current_route}}{{field.name}}">{{field.name}}</a>
                                             </td>
                                             <td>{{field.description}}</td>
-                                           
+
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -165,23 +194,156 @@ $.ajax({
                     <br><br>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="{{docjson.current_route}}{% if docjson.methods.GET.parameters|length > 0 %}?{{docjson.methods.GET.parameters[0].name}}={{docjson.methods.GET.parameters[0].example}}{% endif %}" id="tryitget" type="text" class="validate">
-                            <label class="active" for="tryitget">Try it out. Type your query in the field below and click the GET button. </label>
+                            <input
+                                value="{{docjson.current_route}}{% if docjson.methods.GET.parameters|length > 0 %}?{{docjson.methods.GET.parameters[0].name}}={{docjson.methods.GET.parameters[0].example}}{% endif %}"
+                                id="tryitget" type="text" class="validate">
+                            <label class="active" for="tryitget">Try it out. Type your query in the field below and
+                                click the GET button. </label>
                         </div>
                     </div>
-                    <button class="waves-effect waves-light btn" id="GET">GET</button><span style="font-size: small;color: gray;"><--Click here.</span>
-                    <div>The server responses will appear below. Expand the response to view it.</div>
-                    <div class="card " style="overflow: scroll;">
-                        <div id="result" style="margin: 20px;"></div>
-                    </div>
-                    {% endif %}
+                    <button class="waves-effect waves-light btn" id="GET">GET</button><span
+                        style="font-size: small;color: gray;">
+                        <--Click here.</span> <div>The server responses will appear below. Expand the response to view
+                            it.
                 </div>
+                <div class="card " style="overflow: scroll;">
+                    <div id="result" style="margin: 20px;"></div>
+                </div>
+                {% endif %}
             </div>
         </div>
-        <div class="col s3"></div>
+    </div>
+    <div class="col s3"></div>
 
     </div>
     {% endif %}
+
+
+    {% if 'POST' in docjson.methods %}
+    <div class="row">
+        <div class="col s3"></div>
+        <div class="col s6">
+
+            <div class="card ">
+
+                <div class="card-content ">
+                    <span class="card-title">POST</span>
+                    <p>POST method for {{docjson.current_route}}</p>
+                </div>
+                <div class="card-action">
+                    <div style="font-size: small;color: gray;">Expand to see examples </div>
+
+                    <ul class="collapsible">
+                        {% if jsonexample %}<li>{% else %}
+                        <li class="active"> {% endif %}
+
+                            <div class="collapsible-header"><i id="expand"
+                                    class="material-icons">expand_more</i>Available Fields and Examples</div>
+                            <div class="collapsible-body">
+                                JS example:
+                                <pre class="prettyprint">
+
+
+$.ajax({
+    type: "POST",
+    url: '{{docjson.current_route}}',
+    dataType: 'json',
+    contentType: 'application/json',
+    async: false,
+    data: ,'{{postjsondata|safe}}',
+    success: function (data) {
+        document.getElementById("postresult").appendChild(renderjson(data));
+        
+    }
+})  
+</pre>
+                                {% if docjson.methods.GET.parameters|length > 0 %}
+                                <div>Available Fields</div>
+                                <div style="font-size: small;color: gray;">Click on the examples.</div>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            {% for name in docjson.gettablefieldnames %}
+                                            <th>{{name}}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% for field in docjson.methods.GET.parameters %}
+                                        <tr>
+                                            <td>{{field.name}}</td>
+                                            <td>{{field.type}}</td>
+                                            <td>{{field.example}}</td>
+                                            <td>{{field.description}}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% endif %}
+
+
+                                {% if docjson.methods.GET.arguments|length > 0 %}
+                                <div>Available Arguments</div>
+                                <div style="font-size: small;color: gray;">Click on the examples.</div>
+                                <table>
+                                    <thead>
+                                        <tr>
+
+                                            <th>Name</th>
+                                            <th>Description</th>
+
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% for field in docjson.methods.GET.arguments %}
+                                        <tr>
+
+
+                                            <td> <a href="{{docjson.current_route}}{{field.name}}">{{field.name}}</a>
+                                            </td>
+                                            <td>{{field.description}}</td>
+
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% endif %}
+
+
+
+                            </div>
+                        </li>
+
+                    </ul>
+                    {% if jsonexample %}
+                    <br><br>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <textarea id="tryitpost" class="materialize-textarea"
+                                data-length="120">{{postjsondata|safe}}</textarea>
+                            <label for="tryitpost">Post JSON</label>
+                        </div>
+                    </div>
+                    <button class="waves-effect waves-light btn" id="POST">POST</button><span
+                        style="font-size: small;color: gray;">
+                        <--Click here.</span> <div>The server responses will appear below. Expand the response to view
+                            it.
+                </div>
+                <div class="card " style="overflow: scroll;">
+                    <div id="postresult" style="margin: 20px;"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col s3"></div>
+
+    </div>
+    {% endif %}
+
+
 
 </body>
 

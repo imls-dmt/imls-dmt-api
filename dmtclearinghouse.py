@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 #Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
-
+resources_facets=["facet_author_org","facet_subject","facet_keywords","facet_license","facet_usage_rights","facet_publisher","facet_access_features","facet_language_primary","facet_languages_secondary","facet_ed_framework","facet_target_audience","facet_type","facet_purpose","facet_media_type"]
 #Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
 users = pysolr.Solr(app.config["SOLR_ADDRESS"]+"users/", timeout=10)
@@ -99,10 +99,17 @@ def get_user(user_name):
     return None
 #Format Solr Return for end user:
 def format_resource(results):
-    returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[]}')
+    #print(results)
+    returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[], "facets":{}}')
     for result in results:
+        #print(result)
         result.pop('_version_', None)
         result.pop('status', None)
+        list_keys = list(result.keys())
+        for k in list_keys:
+            if k.startswith('facet_'):
+                result.pop(k)
+
         if "contributors.firstname" in result.keys():
             result['contributors']=[]
             if result["contributors.firstname"]:
@@ -119,7 +126,7 @@ def format_resource(results):
             for i in range(len(result["contributor_orgs.name"])):
                 contributor=json.loads('{}')
                 contributor['name']=result["contributor_orgs.name"][i]
-
+                
                 if "contributor_orgs.type" in result.keys():
                     contributor['type']=result["contributor_orgs.type"][i]
                     
@@ -130,7 +137,16 @@ def format_resource(results):
         result.pop('contributors.lastname', None)
         result.pop('contributors.type', None)
         returnval['results'].append(result)
-
+    #print(results.facets)
+    if "facet_fields" in results.facets.keys():
+        for rf in resources_facets:
+            rfobject={}
+            if rf in results.facets['facet_fields'].keys():
+                for value,number in zip(results.facets['facet_fields'][rf][0::2], results.facets['facet_fields'][rf][1::2]):
+                    if number>0:
+                        rfobject[value]=number
+            #print(rfobject)
+            returnval['facets'][rf.replace('facet_','')]=rfobject
     returnval['hits-total']=results.hits
     returnval['hits-returned']=len(results)
     return returnval
@@ -157,6 +173,7 @@ def generate_documentation(docstring,document,request,jsonexample=False):
                 docjson['methods'][r]=json.loads('{"parameters":[],"arguments":[]}')
 
     fields=[]
+    postjsondata=""
     for line in docstring.splitlines():
         if line.lstrip()[0:2]==";;":
             if line.lstrip().split(":",1)[0]==";;field":
@@ -169,6 +186,11 @@ def generate_documentation(docstring,document,request,jsonexample=False):
             if line.lstrip().split(":",1)[0]==";;gettablefieldnames":
                 j=json.loads(line.split(":",1)[1])
                 docjson['gettablefieldnames']=j                
+            if line.lstrip().split(":",1)[0]==";;postjson":
+                j=json.loads(line.split(":",1)[1])
+                #print(j)
+                postjsondata=json.dumps(j,indent=2)
+                #print(postjsondata)
 
 
     if document=="documentation.md":
@@ -176,16 +198,16 @@ def generate_documentation(docstring,document,request,jsonexample=False):
         resp.headers['Content-type'] = 'text/markdown; charset=UTF-8'
         return resp
     if document=="documentation.htm":
-        return render_template(document, docjson=docjson, jsonexample=jsonexample)
-    return render_template(document, docjson=docjson, jsonexample=jsonexample)
+        return render_template(document, docjson=docjson, jsonexample=jsonexample,postjsondata=postjsondata)
+    return render_template(document, docjson=docjson, jsonexample=jsonexample,postjsondata=postjsondata)
 
 ######################
 #Routes and Handelers#
 ######################
 
 #Resource interaction
-@app.route("/api/resources/", defaults={'document': None}, methods = ['GET'])
-@app.route("/api/resources/<document>", methods = ['GET'])
+@app.route("/api/resources/", defaults={'document': None}, methods = ['GET','POST'])
+@app.route("/api/resources/<document>", methods = ['GET','POST'])
 def learning_resources(document):
 
     """ 
@@ -199,7 +221,14 @@ def learning_resources(document):
         Returns: 
             json: JSON results from Solr  
     POST:
-        Not yet implemented
+        Builds Solr searches and returns results for learning resources.
+    
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
     PUT
         Not yet implemented
     DELETE
@@ -239,6 +268,7 @@ def learning_resources(document):
     ;;field:{"name":"type","type":"string","example":"\\\"Learning Activity\\\"","description":""}
     ;;field:{"name":"limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 10"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:{"search":[{"group":"and","and":[{"string":"Data archiving","field":"keywords","type":"match"}]}]}
     """
     if document is None:
         document='search.json'
@@ -294,14 +324,18 @@ def learning_resources(document):
                 rows=int(request.args.get("limit"))
         results=resources.search(searchstring, rows=rows)
         
-                    
+
         return format_resource(results)
-                        
+
 
     if request.method == 'POST':
+        params = {
+            'facet': 'on',
+            'facet.field':resources_facets
+            
+        }
         operators=['AND','NOT','OR']
         searchstring="status:true"
-        print("POST DATA VVVVVVVV")
         if request.is_json:
             content = request.get_json()
             if len(content['search'])>0:
@@ -324,9 +358,21 @@ def learning_resources(document):
                                         searchstring+=q['field']+":\""+q['string']+"\""
                         searchstring+=")"
 
+            if 'limit' in content.keys():
+                print(content['limit'])
+                rows=content['limit']
+            else:
+                rows=10
+
+            if 'offset' in content.keys():
+                print(content['offset'])
+                start=content['offset']
+            else:
+                start=0
+
+            
             print(searchstring)
-            rows=10
-            results=resources.search(searchstring, rows=rows)
+            results=resources.search(searchstring, **params, rows=rows, start=start)
             return format_resource(results)
         else:
             return 'json not found'
@@ -361,7 +407,7 @@ def api():
 
 @app.route("/api/schema/", defaults={'collection': None,'returntype':None}, methods = ['GET'])
 @app.route("/api/schema/<collection>.<returntype>",methods = ['GET'])
-@login_required
+# @login_required
 def schema(collection,returntype):
 
     """ 
