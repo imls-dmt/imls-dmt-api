@@ -299,7 +299,38 @@ def learning_resources(document):
                         
 
     if request.method == 'POST':
-        return "Method not yet implemented"
+        operators=['AND','NOT','OR']
+        searchstring="status:true"
+        print("POST DATA VVVVVVVV")
+        if request.is_json:
+            content = request.get_json()
+            if len(content['search'])>0:
+                for index, group in enumerate(content['search']):
+                    qindex=0
+                    if group['group'].upper() in operators:
+                        searchstring+=" "+group['group'].upper()+" ("
+                        for num, key in enumerate(group.keys()):
+                            if key.upper() in operators:
+                                for q in group[key]:
+                                    if q['type']=='simple':
+                                        if qindex>0:
+                                            searchstring+=" "+key.upper()+" "
+                                        qindex+=1
+                                        searchstring+=q['field']+":"+q['string']
+                                    elif q['type']=='match':
+                                        if qindex>0:
+                                            searchstring+=" "+key.upper()+" "
+                                        qindex+=1
+                                        searchstring+=q['field']+":\""+q['string']+"\""
+                        searchstring+=")"
+
+            print(searchstring)
+            rows=10
+            results=resources.search(searchstring, rows=rows)
+            return format_resource(results)
+        else:
+            return 'json not found'
+        return 'No query processed'
     if request.method == 'PUT':
         return "Method not yet implemented"
     if request.method == 'DELETE':
