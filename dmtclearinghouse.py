@@ -97,7 +97,43 @@ def get_user(user_name):
         user.pop('_version_', None)
         return user
     return None
+#Format Solr Return for end user:
+def format_resource(results):
+    returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[]}')
+    for result in results:
+        result.pop('_version_', None)
+        result.pop('status', None)
+        if "contributors.firstname" in result.keys():
+            result['contributors']=[]
+            if result["contributors.firstname"]:
+                for i in range(len(result["contributors.firstname"])):
+                    contributor=json.loads('{}')
+                    contributor['firstname']=result["contributors.firstname"][i]
+                    if "contributors.lastname" in result.keys():
+                        contributor['lastname']=result["contributors.lastname"][i]
+                    if "contributors.type" in result.keys():
+                        contributor['type']=result["contributors.type"][i]
+                    result['contributors'].append(contributor)
+        if "contributor_orgs.name" in result.keys():
+            result['contributor_orgs']=[]
+            for i in range(len(result["contributor_orgs.name"])):
+                contributor=json.loads('{}')
+                contributor['name']=result["contributor_orgs.name"][i]
 
+                if "contributor_orgs.type" in result.keys():
+                    contributor['type']=result["contributor_orgs.type"][i]
+                    
+                result['contributor_orgs'].append(contributor)
+        result.pop('contributor_orgs.type', None)
+        result.pop('contributor_orgs.name', None)
+        result.pop('contributors.firstname', None)
+        result.pop('contributors.lastname', None)
+        result.pop('contributors.type', None)
+        returnval['results'].append(result)
+
+    returnval['hits-total']=results.hits
+    returnval['hits-returned']=len(results)
+    return returnval
 #Documentation generation
 def generate_documentation(docstring,document,request,jsonexample=False):
     request_rule=request.url_rule
@@ -214,7 +250,7 @@ def learning_resources(document):
     if request.method == 'GET':
         if document!="search.json":
             return generate_documentation(learning_resources.__doc__,document,request,True)
-        returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[]}')
+        
         searchstring="status:true"
         
         searchstring=append_searchstring(searchstring,request,"title")
@@ -258,40 +294,10 @@ def learning_resources(document):
                 rows=int(request.args.get("limit"))
         results=resources.search(searchstring, rows=rows)
         
-        for result in results:
-            result.pop('_version_', None)
-            result.pop('status', None)
-            if "contributors.firstname" in result.keys():
-                result['contributors']=[]
-                if result["contributors.firstname"]:
-                    for i in range(len(result["contributors.firstname"])):
-                        contributor=json.loads('{}')
-                        contributor['firstname']=result["contributors.firstname"][i]
-                        if "contributors.lastname" in result.keys():
-                            contributor['lastname']=result["contributors.lastname"][i]
-                        if "contributors.type" in result.keys():
-                            contributor['type']=result["contributors.type"][i]
-                        result['contributors'].append(contributor)
-            if "contributor_orgs.name" in result.keys():
-                result['contributor_orgs']=[]
-                for i in range(len(result["contributor_orgs.name"])):
-                    contributor=json.loads('{}')
-                    contributor['name']=result["contributor_orgs.name"][i]
                     
-                    if "contributor_orgs.type" in result.keys():
-                        contributor['type']=result["contributor_orgs.type"][i]
+        return format_resource(results)
                         
-                    result['contributor_orgs'].append(contributor)
-            result.pop('contributor_orgs.type', None)
-            result.pop('contributor_orgs.name', None)
-            result.pop('contributors.firstname', None)
-            result.pop('contributors.lastname', None)
-            result.pop('contributors.type', None)
-            returnval['results'].append(result)
 
-        returnval['hits-total']=results.hits
-        returnval['hits-returned']=len(results)
-        return returnval
     if request.method == 'POST':
         return "Method not yet implemented"
     if request.method == 'PUT':
