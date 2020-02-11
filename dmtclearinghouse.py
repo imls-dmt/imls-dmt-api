@@ -150,6 +150,28 @@ def format_resource(results):
     returnval['hits-total']=results.hits
     returnval['hits-returned']=len(results)
     return returnval
+
+#Documentation generation
+def temlate_doc(collection_name):
+    """
+    Internal function for building template doc from schema.
+    Parameters: 
+
+        collection_name (str): name of a collection.
+
+    Returns:
+        json document
+    """
+    template=json.loads("{}")
+    r = requests.get(app.config["SOLR_ADDRESS"]+collection_name+"/schema?wt=json")
+    if r.json():
+        for field in r.json()['schema']['fields']:
+            if not field['name'].startswith(( '_' ,'facet_')):
+                if field['multiValued']:
+                    template[field['name']]=[]
+                else:
+                    template[field['name']]=None
+    return template
 #Documentation generation
 def generate_documentation(docstring,document,request,jsonexample=False):
     request_rule=request.url_rule
