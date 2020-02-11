@@ -98,6 +98,12 @@ def get_user(user_name):
         return user
     return None
 #Format Solr Return for end user:
+
+def normalize_result(result,template):
+    for key in template.keys():
+        template[key]=result[key]
+    return template
+
 def format_resource(results):
     #print(results)
     returnval= json.loads('{ "documentation":"'+request.host_url+'api/resources/documentation.html","results":[], "facets":{}}')
