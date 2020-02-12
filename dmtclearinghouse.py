@@ -643,10 +643,11 @@ def vocabularies(document):
     DELETE
         Not yet implemented
     
-    ;;field:{"name":"id","type":"UUID","example":"35952525-b39c-4b50-a925-2ea52eb928b1","description":"ID of vocabulary"}
+    ;;field:{"name":"id","type":"UUID","example":"IDPLACEHOLDER","description":"ID of vocabulary"}
     ;;field:{"name":"name","type":"string","example":"\\\"Organizations\\\"","description":"Name of vocabulary"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     """
+
 
     if document is None:
         document='search.json'
@@ -657,7 +658,11 @@ def vocabularies(document):
 
     if request.method == 'GET':
         if document!="search.json":
-            return generate_documentation(vocabularies.__doc__,document,request,True)
+            result1=taxonomies.search("*:*",rows=1)
+            id=result1.docs[0]["id"]
+            this_docstring=vocabularies.__doc__
+            this_docstring=this_docstring.replace('IDPLACEHOLDER', id)
+            return generate_documentation(this_docstring,document,request,True)
         searchstring="*:*"
         returnval= json.loads('{ "documentation":"'+request.host_url+'api/vocabularies/documentation.html","names":[]}')
         if len(request.args)>0:
