@@ -116,7 +116,7 @@ def format_resource(results):
         for k in list_keys:
             if k.startswith('facet_'):
                 result.pop(k)
-
+        result=normalize_result(result,temlate_doc('learningresources'))
         if "contributors.firstname" in result.keys():
             result['contributors']=[]
             if result["contributors.firstname"]:
