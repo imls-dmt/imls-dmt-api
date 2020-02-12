@@ -235,6 +235,106 @@ def generate_documentation(docstring,document,request,jsonexample=False):
 ######################
 
 #Resource interaction
+@app.route("/api/resource/", defaults={'document': None}, methods = ['POST'])
+@app.route("/api/resource/<document>", methods = ['GET','POST'])
+# @login_required
+def learning_resource_post(document):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Builds Solr searches and returns results for learning resources.
+    
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Not yet implemented
+    DELETE
+        Not yet implemented
+    
+    
+
+    ;;field:{"name":"template","type":"","example":"template","description":"Generate empty resource from schema"}
+    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the learning resource."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:"""
+
+
+    if request.method == 'POST':
+
+        if request.is_json:
+            template=temlate_doc('learningresources')
+            content = request.get_json()
+            normalized_content=normalize_result(content,template)
+            if normalized_content["id"]:
+                existing_resource=resources.search("id:"+normalized_content["id"])
+                if current_user.name==format_resource(existing_resource)['results'][0]["author"] or ("admin" in current_user.groups):
+                    return "update"
+            else:
+                #TODO
+                #Get schema list of required fields.
+                resources.add([normalized_content])
+                test=resources.commit()
+                return "add"
+    if request.method == 'GET':
+        print(temlate_doc('learningresources'))
+        if document is not None:
+            allowed_documents=['documentation.html','documentation.md','documentation.htm']
+            if document not in  allowed_documents:
+                return render_template('bad_document.html',example="documentation.html"), 400
+            else:
+                this_docstring=learning_resource_post.__doc__+json.dumps(temlate_doc('learningresources'))
+                print(this_docstring)
+                result1=resources.search("*:*",rows=1)
+                id=result1.docs[0]["id"]
+                this_docstring=this_docstring.replace('IDPLACEHOLDER', id)
+                return generate_documentation(this_docstring,document,request,True)
+
+
+    return "Documentation not implemented."
+
+@app.route("/api/resource/", defaults={'document': None}, methods = ['GET'])
+def learning_resource(document):
+    if request.method == "GET":
+        if document is None:
+            if request.args.get('id'):
+                if current_user.is_authenticated:
+                    if "admin" in current_user.groups:
+                        searchstring="*:*"
+                    else:
+                        searchstring="status:true"
+                else:
+                    searchstring="status:true"
+                searchstring=append_searchstring(searchstring,request,"id")
+                results=resources.search(searchstring, rows=1)
+                template=temlate_doc('learningresources')
+                if len(results.docs)>0:
+                    normalized_content=normalize_result(results.docs[0],template)
+                    return normalized_content
+                else:
+                    return "No results found"               
+            else:
+                return temlate_doc('learningresources')
+    if request.method == 'POST':
+        if request.is_json:
+            content = request.get_json()
+            existing_resource=resources.search("id:"+content["id"])
+            return format_resource(existing_resource)
+    return "Documentation not implemented."
+
+
+#Resource interaction
 @app.route("/api/resources/", defaults={'document': None}, methods = ['GET','POST'])
 @app.route("/api/resources/<document>", methods = ['GET','POST'])
 def learning_resources(document):
