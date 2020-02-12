@@ -102,7 +102,7 @@ def get_user(user_name):
 def normalize_result(result,template):
     for key in result.keys():
         if key in template.keys():
-        template[key]=result[key]
+            template[key]=result[key]
     return template
 
 def format_resource(results):
@@ -547,7 +547,7 @@ def api():
             if "<" not in rule.rule:
                 if rule.rule!="/api/":
                     if rule.rule+"documentation.html" not in rulelist:
-                    rulelist.append(rule.rule+"documentation.html")
+                        rulelist.append(rule.rule+"documentation.html")
     return render_template('api.html',rulelist=rulelist)
 
 
