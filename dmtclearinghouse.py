@@ -487,6 +487,21 @@ def learning_resources(document):
                                             searchstring+=" "+key.upper()+" "
                                         qindex+=1
                                         searchstring+=q['field']+":\""+q['string']+"\""
+                                    elif q['type']=='startswith':
+                                        if qindex>0:
+                                            searchstring+=" "+key.upper()+" "
+                                        qindex+=1
+                                        searchstring+=q['field']+":"+q['string']+"*"
+                                    elif q['type']=='lte':
+                                        if qindex>0:
+                                            searchstring+=" "+key.upper()+" "
+                                        qindex+=1
+                                        searchstring+=q['field']+":[* TO \""+q['string']+"\"]"
+                                    elif q['type']=='gte':
+                                        if qindex>0:
+                                            searchstring+=" "+key.upper()+" "
+                                        qindex+=1
+                                        searchstring+=q['field']+":[ \""+q['string']+"\" TO *]"
                         searchstring+=")"
 
             if 'limit' in content.keys():
