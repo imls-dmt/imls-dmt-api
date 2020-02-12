@@ -616,7 +616,7 @@ def schema(collection,returntype):
         if returntype=="html":
             return render_template("schema.html", schemajson=schemajson, collection=collection, html=True,date=today)
         if returntype=="pdf":
-            schemapdfhtml=HTML(string=render_template("schema.html", schemajson=schemajson, collection=collection))
+            schemapdfhtml=HTML(string=render_template("schema.html", schemajson=schemajson, collection=collection,date=today))
             resp=make_response(schemapdfhtml.write_pdf())
             resp.headers['Content-type'] = 'application/pdf'
             return resp
