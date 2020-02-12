@@ -128,18 +128,18 @@ def format_resource(results):
                     if "contributors.type" in result.keys():
                         contributor['type']=result["contributors.type"][i]
                     result['contributors'].append(contributor)
-        if "contributor_orgs.name" in result.keys():
+        if "contributor_orgs_name" in result.keys():
             result['contributor_orgs']=[]
-            for i in range(len(result["contributor_orgs.name"])):
+            for i in range(len(result["contributor_orgs_name"])):
                 contributor=json.loads('{}')
-                contributor['name']=result["contributor_orgs.name"][i]
+                contributor['name']=result["contributor_orgs_name"][i]
                 
-                if "contributor_orgs.type" in result.keys():
-                    contributor['type']=result["contributor_orgs.type"][i]
+                if "contributor_orgs_type" in result.keys():
+                    contributor['type']=result["contributor_orgs_type"][i]
                     
                 result['contributor_orgs'].append(contributor)
-        result.pop('contributor_orgs.type', None)
-        result.pop('contributor_orgs.name', None)
+        result.pop('contributor_orgs_type', None)
+        result.pop('contributor_orgs_name', None)
         result.pop('contributors.firstname', None)
         result.pop('contributors.lastname', None)
         result.pop('contributors.type', None)
@@ -274,14 +274,15 @@ def learning_resources(document):
     ;;field:{"name":"author_org","type":"string","example":"DataONE","description":""}
     ;;field:{"name":"contact","type":"string","example":"\\\"Nancy J.  Hoebelheinrich\\\"","description":""}
     ;;field:{"name":"contact_org","type":"string","example":"NASA","description":""}
-    ;;field:{"name":"abstract.data","type":"string","example":"researchers","description":""}
+    ;;field:{"name":"abstract_data","type":"string","example":"researchers","description":""}
+    ;;field:{"name":"abstract_format","type":"string","example":"filtered_html","description":""}
     ;;field:{"name":"subject","type":"string","example":"Aerospace","description":""}
     ;;field:{"name":"keywords","type":"string","example":"\\\"Data management\\\"","description":""}
     ;;field:{"name":"licence","type":"string","example":"\\\"Creative Commons\\\"","description":""}
     ;;field:{"name":"usage_rights","type":"string","example":"USGS","description":""}
-    ;;field:{"name":"citation.data","type":"string","example":"research","description":""}
-    ;;field:{"name":"locator.data","type":"string","example":"\\\"10.5281/zenodo.239090\\\"","description":""}
-    ;;field:{"name":"locator.type","type":"string","example":"DOI","description":""}
+    ;;field:{"name":"citation","type":"string","example":"research","description":""}
+    ;;field:{"name":"locator_data","type":"string","example":"\\\"10.5281/zenodo.239090\\\"","description":""}
+    ;;field:{"name":"locator_type","type":"string","example":"DOI","description":""}
     ;;field:{"name":"publisher","type":"string","example":"\\\"Oak Ridge National Laboratory\\\"","description":""}
     ;;field:{"name":"version","type":"string","example":"\\\"1.0\\\"","description":""}
     ;;field:{"name":"access_features","type":"string","example":"Transformation","description":""}
@@ -321,14 +322,15 @@ def learning_resources(document):
         searchstring=append_searchstring(searchstring,request,"author_org")
         searchstring=append_searchstring(searchstring,request,"contact")
         searchstring=append_searchstring(searchstring,request,"contact_org")
-        searchstring=append_searchstring(searchstring,request,"abstract.data")
+        searchstring=append_searchstring(searchstring,request,"abstract_data")
+        searchstring=append_searchstring(searchstring,request,"abstract_format")
         searchstring=append_searchstring(searchstring,request,"subject")
         searchstring=append_searchstring(searchstring,request,"keywords")
         searchstring=append_searchstring(searchstring,request,"licence")
         searchstring=append_searchstring(searchstring,request,"usage_rights")
-        searchstring=append_searchstring(searchstring,request,"citation.data")
-        searchstring=append_searchstring(searchstring,request,"locator.data")
-        searchstring=append_searchstring(searchstring,request,"locator.type")
+        searchstring=append_searchstring(searchstring,request,"citation")
+        searchstring=append_searchstring(searchstring,request,"locator_data")
+        searchstring=append_searchstring(searchstring,request,"locator_type")
         searchstring=append_searchstring(searchstring,request,"publisher")
         searchstring=append_searchstring(searchstring,request,"version")
         searchstring=append_searchstring(searchstring,request,"created")
