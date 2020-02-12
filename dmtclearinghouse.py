@@ -100,7 +100,8 @@ def get_user(user_name):
 #Format Solr Return for end user:
 
 def normalize_result(result,template):
-    for key in template.keys():
+    for key in result.keys():
+        if key in template.keys():
         template[key]=result[key]
     return template
 
