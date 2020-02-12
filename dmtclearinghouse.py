@@ -599,7 +599,7 @@ def schema(collection,returntype):
     schemajson=json.loads('{"description":"Learning Resources Schema", "fields":[]}')
     if r.json():
         for field in r.json()['fields']:
-            if not field['name'].startswith( '_' ):
+            if not field['name'].startswith(( '_' ,'facet_')):
                 thisfield=json.loads("{}")
                 thisfield['name']=field['name']
                 thisfield['type']=typemap[field['type']]
