@@ -546,6 +546,7 @@ def api():
         if "/api/" in rule.rule:
             if "<" not in rule.rule:
                 if rule.rule!="/api/":
+                    if rule.rule+"documentation.html" not in rulelist:
                     rulelist.append(rule.rule+"documentation.html")
     return render_template('api.html',rulelist=rulelist)
 
