@@ -7,11 +7,25 @@ from docstring_parser import parse
 import requests
 from weasyprint import HTML
 from datetime import date
+from datetime import datetime
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, Date, Boolean, JSON
+from sqlalchemy.orm import sessionmaker
+
 # Create flask app
 app = Flask(__name__)
 
 # Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
+engine = create_engine(app.config["CONNECT_STRING"])
+meta = MetaData()
+Base = automap_base()
+Base.prepare(engine, reflect=True)
+Learningresources = Base.classes.learningresources
+Users =Base.classes.users
+Taxonomies = Base.classes.taxonomies
+
 resources_facets = ["facet_author_org", "facet_subject", "facet_keywords", "facet_license", "facet_usage_rights", "facet_publisher", "facet_access_features",
                     "facet_language_primary", "facet_languages_secondary", "facet_ed_framework", "facet_target_audience", "facet_type", "facet_purpose", "facet_media_type"]
 # Create a pysolr object for accessing the "learningresources" and "users" index
@@ -30,6 +44,158 @@ drash = drupal_hash_utility.DrupalHashUtility()
 ##############################
 #Shared Functions and classes#
 ##############################
+###################
+#Admin Functions###
+###################
+
+
+def reindex():
+
+    lrcount=0
+    returnj= json.loads('{"result":{}}')
+    session = Session(engine)
+    Learning_Resources_IDs_count=session.query(Learningresources).count()
+    rescount=resources.search("*:*",rows=0)
+    if rescount.raw_response['response']['numFound']==Learning_Resources_IDs_count:
+        resources.delete(q='*:*')
+        test = resources.commit()
+        print(test)
+        Learning_Resources_IDs_res=session.query(Learningresources).all()
+        Learning_Resources_JSON=[]
+        for doc in Learning_Resources_IDs_res:
+            Learning_Resources_JSON.append(json.loads(doc.value))
+            lrcount=lrcount+1
+        resources.add(Learning_Resources_JSON)
+        test = resources.commit()
+        res=resources.search("*:*",rows=0)
+        if res.raw_response['response']['numFound']==lrcount:
+            returnj['result']['learning_resources']={"sucess":True,"count":lrcount}
+        else:
+            returnj['result']['learning_resources']={"sucess":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
+    else:
+        returnj['result']['learning_resources']={"sucess":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Learning_Resources_IDs_count}
+    
+    lrcount=0
+    Users_IDs_count=session.query(Users).count()
+    rescount=users.search("*:*",rows=0)
+    if rescount.raw_response['response']['numFound']==Users_IDs_count: 
+        users.delete(q='*:*')
+        test = users.commit()
+        Users_IDs_res=session.query(Users).all()
+        Users_IDs_JSON=[]
+        for doc in Users_IDs_res:
+            Users_IDs_JSON.append(json.loads(doc.value))
+            lrcount=lrcount+1
+        users.add(Users_IDs_JSON)
+        test = users.commit()
+        res=users.search("*:*",rows=0)
+        if res.raw_response['response']['numFound']==lrcount:
+            returnj['result']['users']={"sucess":True,"count":lrcount}
+        else:
+            returnj['result']['users']={"sucess":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
+    else:
+        returnj['result']['learning_resources']={"sucess":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Users_IDs_count}
+
+
+    lrcount=0
+    Taxonomies_IDs_count=session.query(Taxonomies).count()
+    rescount=taxonomies.search("*:*",rows=0)
+    if rescount.raw_response['response']['numFound']==Taxonomies_IDs_count: 
+        taxonomies.delete(q='*:*')
+        test = taxonomies.commit()
+        Taxonomies_IDs_res=session.query(Taxonomies).all()
+        Taxonomies_IDs_JSON=[]
+        for doc in Taxonomies_IDs_res:
+            Taxonomies_IDs_JSON.append(json.loads(doc.value))
+            lrcount=lrcount+1
+        taxonomies.add(Taxonomies_IDs_JSON)
+        test = taxonomies.commit()
+        res=taxonomies.search("*:*",rows=0)
+        if res.raw_response['response']['numFound']==lrcount:
+            returnj['result']['taxonomies']={"sucess":True,"count":lrcount}
+        else:
+            returnj['result']['taxonomies']={"sucess":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
+    else:
+        returnj['result']['learning_resources']={"sucess":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Taxonomies_IDs_count}
+
+
+
+    return returnj
+
+
+def strip_version(doc):
+    doc.pop('_version_', None)
+    return doc
+
+def solr_to_mysql():
+    # db_results['added_id']=[]
+    returnj= json.loads('{"result":{}}')
+
+
+    print("Creating db session...")
+    session = Session(engine)
+    Learning_Resources_IDs_res=session.query(Learningresources.id).all()
+    Learning_Resources_IDs=[]
+    for lrid in Learning_Resources_IDs_res:
+        Learning_Resources_IDs.append(lrid.id)
+    lr=requests.get(app.config["SOLR_ADDRESS"]+"learningresources/select?&q=*%3A*&rows=100000")
+    # Solr_Learning_Resources_IDs=[]
+    if lr.json():
+        insertnum=0
+        for doc in lr.json()['response']['docs']:
+            print(doc['id'])
+            print(Learning_Resources_IDs)
+            if doc['id'] not in Learning_Resources_IDs:
+                doc=strip_version(doc)
+                insertnum=insertnum+1
+                session.add(Learningresources(id = doc['id'], value=json.dumps(doc)))  
+               
+        session.commit()
+        returnj['result']['learningresources']={"number_added":insertnum}
+    else:
+        returnj['result']['learningresources']={"status":"FAIL:No JSON returned from SOLR for learningresources."}
+        # return returnj
+    
+    Users_IDs_res=session.query(Users.id).all()
+    Users_IDs=[]
+    for lrid in Users_IDs_res:
+        Users_IDs.append(lrid.id)
+    lr=requests.get(app.config["SOLR_ADDRESS"]+"users/select?&q=*%3A*&rows=100000")
+    if lr.json():
+        insertnum=0
+        for doc in lr.json()['response']['docs']:
+            if doc['id'] not in Users_IDs:
+                doc=strip_version(doc)
+                insertnum=insertnum+1
+                session.add(Users(id = doc['id'], value=json.dumps(doc)))  
+        session.commit()
+        returnj['result']['users']={"number_added":insertnum}
+    else:
+        returnj['result']['users']={"status":"FAIL:No JSON returned from SOLR for users."}
+        # return returnj
+
+    Taxonomies_IDs_res=session.query(Taxonomies.id).all()
+    Taxonomies_IDs=[]
+    for lrid in Taxonomies_IDs_res:
+        Taxonomies_IDs.append(lrid.id)
+    lr=requests.get(app.config["SOLR_ADDRESS"]+"taxonomies/select?&q=*%3A*&rows=100000")
+    # Taxonomies_IDs=[]
+    if lr.json():
+        insertnum=0
+        for doc in lr.json()['response']['docs']:
+            if doc['id'] not in Taxonomies_IDs:
+                doc=strip_version(doc)
+                insertnum=insertnum+1
+                session.add(Taxonomies(id = doc['id'], value=json.dumps(doc)))  
+        session.commit()
+        returnj['result']['taxonomies']={"number_added":insertnum}
+    else:
+        returnj['result']['taxonomies']={"status":"FAIL:No JSON returned from SOLR for taxonomies."}
+        
+        
+
+    return returnj 
+
 def append_searchstring(searchstring, request, name):
     """ 
     Appends searchstring for most text searches.
@@ -245,6 +411,31 @@ def generate_documentation(docstring, document, request, jsonexample=False):
 ######################
 #Routes and Handelers#
 ######################
+
+# Unit Tests Route
+@app.route("/admin/s2m/", methods=['GET'])
+@login_required
+def migrate_solr_mysql():
+    
+    # retval = json.loads('{}')
+    return solr_to_mysql()
+
+
+# Re-Index from MySQL
+@app.route("/admin/reindex/", methods=['GET'])
+@login_required
+def reindex_from_mysql():
+    
+    # retval = json.loads('{}')
+    return reindex()
+
+# Unit Tests Route
+@app.route("/admin/tests/", methods=['GET'])
+@login_required
+def unit_tests():
+    # solr_to_mysql()
+    tests = json.loads('{}')
+    return tests
 
 # Resource interaction
 @app.route("/api/resource/", defaults={'document': None}, methods=['POST'])

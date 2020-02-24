@@ -252,9 +252,14 @@ $.ajax({
     async: false,
     data: ,'{{postjsondata|safe}}',
     success: function (data) {
+        console.log(data)
         document.getElementById("postresult").appendChild(renderjson(data));
         
-    }
+    },
+    error: function(XMLHttpRequest, textStatus, errorThrown) { 
+        console.log("fail")
+        alert("Status: " + textStatus); alert("Error: " + errorThrown); 
+    } 
 })  
 </pre>
                                 {% if docjson.methods.GET.parameters|length > 0 %}
