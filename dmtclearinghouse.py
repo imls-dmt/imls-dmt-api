@@ -326,6 +326,7 @@ def format_resource(results):
                     if "contributors.lastname" in result.keys():
                         contributor['lastname'] = result["contributors.lastname"][i]
                     if "contributors.type" in result.keys():
+                        if len(result["contributors.type"])>0:
                         contributor['type'] = result["contributors.type"][i]
                     result['contributors'].append(contributor)
         if "contributor_orgs_name" in result.keys():
