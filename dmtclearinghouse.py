@@ -59,7 +59,6 @@ def reindex():
     if rescount.raw_response['response']['numFound']==Learning_Resources_IDs_count:
         resources.delete(q='*:*')
         test = resources.commit()
-        print(test)
         Learning_Resources_IDs_res=session.query(Learningresources).all()
         Learning_Resources_JSON=[]
         for doc in Learning_Resources_IDs_res:
@@ -127,7 +126,7 @@ def strip_version(doc):
     doc.pop('_version_', None)
     return doc
 
-        
+
 
 def append_searchstring(searchstring, request, name):
     """ 
@@ -284,7 +283,7 @@ def format_resource(results):
                         contributor['lastname'] = result["contributors.lastname"][i]
                     if "contributors.type" in result.keys():
                         if len(result["contributors.type"])>0:
-                        contributor['type'] = result["contributors.type"][i]
+                            contributor['type'] = result["contributors.type"][i]
                     result['contributors'].append(contributor)
         if "contributor_orgs_name" in result.keys():
             result['contributor_orgs'] = []
@@ -294,7 +293,7 @@ def format_resource(results):
 
                 if "contributor_orgs_type" in result.keys():
                     if len(result["contributor_orgs_type"])>0:
-                    contributor['type'] = result["contributor_orgs_type"][i]
+                        contributor['type'] = result["contributor_orgs_type"][i]
 
                 result['contributor_orgs'].append(contributor)
         result.pop('contributor_orgs_type', None)
@@ -345,10 +344,10 @@ def temlate_doc(collection_name):
         for field in r.json()['schema']['fields']:
             if not field['name'].startswith(('_', 'facet_')):
                 if 'multiValued' in field.keys():
-                if field['multiValued']:
-                    template[field['name']] = []
-                else:
-                    template[field['name']] = None
+                    if field['multiValued']:
+                        template[field['name']] = []
+                    else:
+                        template[field['name']] = None
                 else:
                     template[field['name']] = []
     return template
@@ -479,7 +478,6 @@ def learning_resource_post(document):
                 test = resources.commit()
                 return "add"
     if request.method == 'GET':
-        print(temlate_doc('learningresources'))
         if document is not None:
             allowed_documents = ['documentation.html',
                                  'documentation.md', 'documentation.htm']
@@ -488,7 +486,6 @@ def learning_resource_post(document):
             else:
                 this_docstring = learning_resource_post.__doc__ + \
                     json.dumps(temlate_doc('learningresources'))
-                print(this_docstring)
                 result1 = resources.search("*:*", rows=1)
                 id = result1.docs[0]["id"]
                 this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
@@ -723,13 +720,11 @@ def learning_resources(document):
                         searchstring += ")"
 
             if 'limit' in content.keys():
-                print(content['limit'])
                 rows = content['limit']
             else:
                 rows = 10
 
             if 'offset' in content.keys():
-                print(content['offset'])
                 start = content['offset']
             else:
                 start = 0
@@ -962,7 +957,6 @@ def logout():
 @app.route('/protected')
 @login_required
 def protected():
-    print(current_user.groups)
     return 'Logged in as: ' + current_user.name
 
 
@@ -973,7 +967,6 @@ def hello():
 
 @app.route("/static/<path:path>")
 def send_static(path):
-    print(path)
     return send_from_file('static', path)
 
 
