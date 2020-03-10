@@ -617,7 +617,9 @@ def learning_resources(document):
             searchstring, request, "submitter_name")
         searchstring = append_searchstring(
             searchstring, request, "submitter_email")
-        searchstring = append_searchstring(searchstring, request, "author")
+        searchstring = append_searchstring(searchstring, request, "author_firstnames")
+        searchstring = append_searchstring(searchstring, request, "author_lasttnames")
+        searchstring = append_searchstring(searchstring, request, "creator")
         searchstring = append_searchstring(searchstring, request, "author_org")
         searchstring = append_searchstring(searchstring, request, "contact")
         searchstring = append_searchstring(
