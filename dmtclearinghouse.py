@@ -127,74 +127,7 @@ def strip_version(doc):
     doc.pop('_version_', None)
     return doc
 
-def solr_to_mysql():
-    # db_results['added_id']=[]
-    returnj= json.loads('{"result":{}}')
-
-
-    print("Creating db session...")
-    session = Session(engine)
-    Learning_Resources_IDs_res=session.query(Learningresources.id).all()
-    Learning_Resources_IDs=[]
-    for lrid in Learning_Resources_IDs_res:
-        Learning_Resources_IDs.append(lrid.id)
-    lr=requests.get(app.config["SOLR_ADDRESS"]+"learningresources/select?&q=*%3A*&rows=100000")
-    # Solr_Learning_Resources_IDs=[]
-    if lr.json():
-        insertnum=0
-        for doc in lr.json()['response']['docs']:
-            print(doc['id'])
-            print(Learning_Resources_IDs)
-            if doc['id'] not in Learning_Resources_IDs:
-                doc=strip_version(doc)
-                insertnum=insertnum+1
-                session.add(Learningresources(id = doc['id'], value=json.dumps(doc)))  
-               
-        session.commit()
-        returnj['result']['learningresources']={"number_added":insertnum}
-    else:
-        returnj['result']['learningresources']={"status":"FAIL:No JSON returned from SOLR for learningresources."}
-        # return returnj
-    
-    Users_IDs_res=session.query(Users.id).all()
-    Users_IDs=[]
-    for lrid in Users_IDs_res:
-        Users_IDs.append(lrid.id)
-    lr=requests.get(app.config["SOLR_ADDRESS"]+"users/select?&q=*%3A*&rows=100000")
-    if lr.json():
-        insertnum=0
-        for doc in lr.json()['response']['docs']:
-            if doc['id'] not in Users_IDs:
-                doc=strip_version(doc)
-                insertnum=insertnum+1
-                session.add(Users(id = doc['id'], value=json.dumps(doc)))  
-        session.commit()
-        returnj['result']['users']={"number_added":insertnum}
-    else:
-        returnj['result']['users']={"status":"FAIL:No JSON returned from SOLR for users."}
-        # return returnj
-
-    Taxonomies_IDs_res=session.query(Taxonomies.id).all()
-    Taxonomies_IDs=[]
-    for lrid in Taxonomies_IDs_res:
-        Taxonomies_IDs.append(lrid.id)
-    lr=requests.get(app.config["SOLR_ADDRESS"]+"taxonomies/select?&q=*%3A*&rows=100000")
-    # Taxonomies_IDs=[]
-    if lr.json():
-        insertnum=0
-        for doc in lr.json()['response']['docs']:
-            if doc['id'] not in Taxonomies_IDs:
-                doc=strip_version(doc)
-                insertnum=insertnum+1
-                session.add(Taxonomies(id = doc['id'], value=json.dumps(doc)))  
-        session.commit()
-        returnj['result']['taxonomies']={"number_added":insertnum}
-    else:
-        returnj['result']['taxonomies']={"status":"FAIL:No JSON returned from SOLR for taxonomies."}
         
-        
-
-    return returnj 
 
 def append_searchstring(searchstring, request, name):
     """ 
