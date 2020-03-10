@@ -563,8 +563,10 @@ def learning_resources(document):
     ;;field:{"name":"access_cost","type":"float","example":"1.0","description":""}
     ;;field:{"name":"submitter_name","type":"string","example":"\\\"Amber E Budden\\\"","description":""}
     ;;field:{"name":"submitter_email","type":"string","example":"example@example.com","description":""}
-    ;;field:{"name":"author","type":"string","example":"Nhoebelheinrich","description":""}
+    ;;field:{"name":"author_firstnames","type":"string","example":"Robert","description":""}
+    ;;field:{"name":"author_lastnames","type":"string","example":"Mayernik","description":""}
     ;;field:{"name":"author_org","type":"string","example":"DataONE","description":""}
+    ;;field:{"name":"creator","type":"string","example":"Nhoebelheinrich","description":""}
     ;;field:{"name":"contact","type":"string","example":"\\\"Nancy J.  Hoebelheinrich\\\"","description":""}
     ;;field:{"name":"contact_org","type":"string","example":"NASA","description":""}
     ;;field:{"name":"abstract_data","type":"string","example":"researchers","description":""}
