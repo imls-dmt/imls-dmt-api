@@ -452,15 +452,6 @@ def generate_documentation(docstring, document, request, jsonexample=False):
 #Routes and Handelers#
 ######################
 
-# Unit Tests Route
-@app.route("/admin/s2m/", methods=['GET'])
-@login_required
-def migrate_solr_mysql():
-    
-    # retval = json.loads('{}')
-    return solr_to_mysql()
-
-
 # Re-Index from MySQL
 @app.route("/admin/reindex/", methods=['GET'])
 @login_required
