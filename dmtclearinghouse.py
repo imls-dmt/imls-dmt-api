@@ -290,6 +290,33 @@ def format_resource(results):
             if k.startswith('facet_'):
                 result.pop(k)
         result = normalize_result(result, temlate_doc('learningresources'))
+        if "ed_framework" in result.keys():
+            result['frameworks']={}
+            for framework in result['ed_framework']:
+                result['frameworks'][framework]=[]
+                if framework=="DataONE Education Modules":
+                    if "ed_framework_dataone" in result.keys():
+                        for node in result["ed_framework_dataone"]:
+                            result['frameworks'][framework].append(node)
+                if framework=="FAIR Data Principles":
+                    if "ed_framework_fair" in result.keys():
+                        for node in result["ed_framework_fair"]:
+                            result['frameworks'][framework].append(node)
+                if framework=="ESIP Data Management for Scientists Short Course":
+                    if "ed_framework_esip" in result.keys():
+                        for node in result["ed_framework_esip"]:
+                            result['frameworks'][framework].append(node)
+                if framework=="USGS Science Support Framework":
+                    if "ed_framework_usgs" in result.keys():
+                        for node in result["ed_framework_usgs"]:
+                            result['frameworks'][framework].append(node)
+        if "author_firstnames" in result.keys():
+            result['authors']=[]
+            for i in range(len(result["author_firstnames"])):
+                authorobject = json.loads('{}')
+                authorobject['firstname']=result["author_firstnames"][i]
+                authorobject['lastname']=result["author_lastnames"][i]
+                result['authors'].append(authorobject)
         if "contributors.firstname" in result.keys():
             result['contributors'] = []
             if result["contributors.firstname"]:
