@@ -336,14 +336,23 @@ def format_resource(results):
                 contributor['name'] = result["contributor_orgs_name"][i]
 
                 if "contributor_orgs_type" in result.keys():
+                    if len(result["contributor_orgs_type"])>0:
                     contributor['type'] = result["contributor_orgs_type"][i]
 
                 result['contributor_orgs'].append(contributor)
         result.pop('contributor_orgs_type', None)
+        result.pop('author_firstnames', None)
+        result.pop('author_lastnames', None)
         result.pop('contributor_orgs_name', None)
         result.pop('contributors.firstname', None)
         result.pop('contributors.lastname', None)
         result.pop('contributors.type', None)
+        result.pop('ed_framework', None)
+        result.pop('ed_framework_dataone', None)
+        result.pop('ed_framework_esip', None)
+        result.pop('ed_framework_fair', None)
+        result.pop('ed_framework_usgs', None)
+
         returnval['results'].append(result)
     # print(results.facets)
     if "facet_fields" in results.facets.keys():
