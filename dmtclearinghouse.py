@@ -387,10 +387,13 @@ def temlate_doc(collection_name):
     if r.json():
         for field in r.json()['schema']['fields']:
             if not field['name'].startswith(('_', 'facet_')):
+                if 'multiValued' in field.keys():
                 if field['multiValued']:
                     template[field['name']] = []
                 else:
                     template[field['name']] = None
+                else:
+                    template[field['name']] = []
     return template
 # Documentation generation
 
