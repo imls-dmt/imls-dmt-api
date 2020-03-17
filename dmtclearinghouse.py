@@ -208,6 +208,23 @@ def normalize_result(result, template):
             template[key] = result[key]
     return template
 
+def insert_new_resource(j):fart
+    j['id']=str(uuid.uuid4())
+    session = Session(engine)
+    session.add(Learningresources(id = j['id'], value=json.dumps(j)))
+    try:
+        session.commit()
+    except Exception as err:
+        db_session.rollback()
+        db_session.flush()
+        return({"status":"success","error":str(err)})
+    try:
+        resources.add(j)
+        test = resources.commit()
+    except Exception as solrerr:
+        return({"status":"success","error":str(solrerr)})
+    return({"status":"success","error":None})
+
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
@@ -465,18 +482,12 @@ def learning_resource_post(document):
         if request.is_json:
             template = temlate_doc('learningresources')
             content = request.get_json()
-            normalized_content = normalize_result(content, template)
-            if normalized_content["id"]:
-                existing_resource = resources.search(
-                    "id:"+normalized_content["id"])
-                if current_user.name == format_resource(existing_resource)['results'][0]["author"] or ("admin" in current_user.groups):
-                    return "update"
-            else:
-                # TODO
-                # Get schema list of required fields.
-                resources.add([normalized_content])
-                test = resources.commit()
-                return "add"
+            if 'id' not in content or content['id']=="": #treat as if it is a new document
+                    return insert_new_resource(content)
+            else: #treat as existing
+                    return "not yet implemented."
+                
+
     if request.method == 'GET':
         if document is not None:
             allowed_documents = ['documentation.html',
