@@ -665,6 +665,13 @@ def learning_resources(document):
         if request.args.get("limit"):
             if request.args.get("limit").isnumeric():
                 rows = int(request.args.get("limit"))
+        if request.args.get("offset"):
+            if  request.args.get("offset").isnumeric():
+                start = int(request.args.get("offset"))
+            else:
+                start = 0
+        else:
+            start = 0        
         results = resources.search(searchstring, rows=rows)
 
         return format_resource(results)
