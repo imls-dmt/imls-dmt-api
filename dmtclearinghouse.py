@@ -673,6 +673,20 @@ def learning_resources(document):
         else:
             start = 0        
         results = resources.search(searchstring, rows=rows)
+        newresults = resources.search(searchstring, fl="id",rows=rows, start=start)
+        newarray=[]
+        for newres in newresults:
+            newarray.append(newres['id'])
+
+        session = Session(engine)
+        sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
+        return format_resource_fromdb(newresults,sqlresults)
+        # results = resources.search(searchstring, rows=rows)
+
+
+
+
+        
 
         return format_resource(results)
 
