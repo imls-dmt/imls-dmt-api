@@ -225,6 +225,19 @@ def insert_new_resource(j):fart
         return({"status":"success","error":str(solrerr)})
     return({"status":"success","error":None})
 
+def update_resource(j):
+    session = Session(engine)
+    session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
+    
+    try:
+        session.commit()
+        resources.add([j])
+    except Exception as err:
+        db_session.rollback()
+        db_session.flush()
+        return({"status":"fail","error":str(err)})
+
+    return({"status":"success","error":None})
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
