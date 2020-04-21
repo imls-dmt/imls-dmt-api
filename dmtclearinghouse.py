@@ -271,18 +271,15 @@ def format_resource_fromdb(results,sqlresults):
                 for value, number in zip(results.facets['facet_fields'][rf][0::2], results.facets['facet_fields'][rf][1::2]):
                     if number > 0:
                         rfobject[value] = number
-            # print(rfobject)
             returnval['facets'][rf.replace('facet_', '')] = rfobject
     returnval['hits-total'] = results.hits
     returnval['hits-returned'] = len(results)
     return returnval
 
 def format_resource(results):
-    # print(results)
     returnval = json.loads('{ "documentation":"'+request.host_url +
                            'api/resources/documentation.html","results":[], "facets":{}}')
     for result in results:
-        # print(result)
         result.pop('_version_', None)
         result.pop('status', None)
         list_keys = list(result.keys())
@@ -354,7 +351,6 @@ def format_resource(results):
         result.pop('ed_framework_usgs', None)
 
         returnval['results'].append(result)
-    # print(results.facets)
     if "facet_fields" in results.facets.keys():
         for rf in resources_facets:
             rfobject = {}
@@ -362,7 +358,6 @@ def format_resource(results):
                 for value, number in zip(results.facets['facet_fields'][rf][0::2], results.facets['facet_fields'][rf][1::2]):
                     if number > 0:
                         rfobject[value] = number
-            # print(rfobject)
             returnval['facets'][rf.replace('facet_', '')] = rfobject
     returnval['hits-total'] = results.hits
     returnval['hits-returned'] = len(results)
@@ -436,9 +431,7 @@ def generate_documentation(docstring, document, request, jsonexample=False):
                 docjson['gettablefieldnames'] = j
             if line.lstrip().split(":", 1)[0] == ";;postjson":
                 j = json.loads(line.split(":", 1)[1])
-                # print(j)
                 postjsondata = json.dumps(j, indent=2)
-                # print(postjsondata)
 
     if document == "documentation.md":
         resp = make_response(render_template(document, docjson=docjson))
@@ -471,7 +464,7 @@ def unit_tests():
 # Resource interaction
 @app.route("/api/resource/", defaults={'document': None}, methods=['POST'])
 @app.route("/api/resource/<document>", methods=['GET', 'POST'])
-# @login_required
+@login_required
 def learning_resource_post(document):
     """ 
     GET:
@@ -551,16 +544,12 @@ def learning_resource(document):
                 if len(results.docs) > 0:
                     normalized_content = normalize_result(
                         results.docs[0], template)
-                    return normalized_content
+                    #normalized_content['authors']={"firstname": None,"lastname": None}
+                    return "test"#normalized_content
                 else:
                     return "No results found"
             else:
-                return temlate_doc('learningresources')
-    if request.method == 'POST':
-        if request.is_json:
-            content = request.get_json()
-            existing_resource = resources.search("id:"+content["id"])
-            return format_resource(existing_resource)
+                return render_template('resource.json')
     return "Documentation not implemented."
 
 
