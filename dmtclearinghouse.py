@@ -787,7 +787,7 @@ def learning_resources(document):
             session = Session(engine)
             sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
             return format_resource_fromdb(results,sqlresults)
-            return format_resource(results)
+
         else:
             return 'json not found'
         return 'No query processed'
