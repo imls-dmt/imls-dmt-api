@@ -485,6 +485,7 @@ def learning_resource_post(document):
             if 'id' not in content or content['id']=="": #treat as if it is a new document
                     return insert_new_resource(content)
             else: #treat as existing
+                    return update_resource(content)
                     return "not yet implemented."
                 
 
