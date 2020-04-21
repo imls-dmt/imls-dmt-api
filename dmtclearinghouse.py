@@ -208,7 +208,7 @@ def normalize_result(result, template):
             template[key] = result[key]
     return template
 
-def insert_new_resource(j):fart
+def insert_new_resource(j):
     j['id']=str(uuid.uuid4())
     session = Session(engine)
     session.add(Learningresources(id = j['id'], value=json.dumps(j)))
@@ -217,12 +217,14 @@ def insert_new_resource(j):fart
     except Exception as err:
         db_session.rollback()
         db_session.flush()
-        return({"status":"success","error":str(err)})
+        return({"status":"fail","error":str(err)})
     try:
-        resources.add(j)
+        resources.add([j])
         test = resources.commit()
     except Exception as solrerr:
-        return({"status":"success","error":str(solrerr)})
+        db_session.rollback()
+        db_session.flush()
+        return({"status":"fail","error":str(solrerr)})
     return({"status":"success","error":None})
 
 def update_resource(j):
