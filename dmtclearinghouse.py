@@ -240,18 +240,30 @@ def update_resource(j):
         return({"status":"fail","error":str(err)})
 
     return({"status":"success","error":None})
+
+def get_score(results,uuid):
+    score=None
+    for res in results:
+        if res['id']==uuid:
+            score=res['score']
+    return score
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
                            'api/resources/documentation.html","results":[], "facets":{}}')
+    for solrres in results:
+
     for result in sqlresults:
         returnjsonresult=json.loads(result.value)
         list_keys = list(returnjsonresult.keys())
+
         for k in list_keys:
             if k.startswith('facet_'):
                 returnjsonresult.pop(k)
-        result = normalize_result(returnjsonresult, lrtemplate)        
+            if returnjsonresult["id"]==solrres['id']:
+                returnjsonresult['score']=get_score(results,returnjsonresult['id'])
         returnval['results'].append(returnjsonresult)
+
     if "facet_fields" in results.facets.keys():
         for rf in resources_facets:
             rfobject = {}
