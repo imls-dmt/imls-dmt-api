@@ -12,6 +12,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, Date, Boolean, JSON
 from sqlalchemy.orm import sessionmaker
+import uuid
 
 # Create flask app
 app = Flask(__name__)
@@ -253,16 +254,16 @@ def format_resource_fromdb(results,sqlresults):
                            'api/resources/documentation.html","results":[], "facets":{}}')
     for solrres in results:
 
-    for result in sqlresults:
-        returnjsonresult=json.loads(result.value)
-        list_keys = list(returnjsonresult.keys())
+        for result in sqlresults:
+            returnjsonresult=json.loads(result.value)
+            list_keys = list(returnjsonresult.keys())
 
-        for k in list_keys:
-            if k.startswith('facet_'):
-                returnjsonresult.pop(k)
+            for k in list_keys:
+                if k.startswith('facet_'):
+                    returnjsonresult.pop(k)
             if returnjsonresult["id"]==solrres['id']:
                 returnjsonresult['score']=get_score(results,returnjsonresult['id'])
-        returnval['results'].append(returnjsonresult)
+                returnval['results'].append(returnjsonresult)
 
     if "facet_fields" in results.facets.keys():
         for rf in resources_facets:
@@ -588,8 +589,8 @@ def learning_resources(document):
     ;;field:{"name":"access_cost","type":"float","example":"1.0","description":""}
     ;;field:{"name":"submitter_name","type":"string","example":"\\\"Amber E Budden\\\"","description":""}
     ;;field:{"name":"submitter_email","type":"string","example":"example@example.com","description":""}
-    ;;field:{"name":"author_firstnames","type":"string","example":"Robert","description":""}
-    ;;field:{"name":"author_lastnames","type":"string","example":"Mayernik","description":""}
+    ;;field:{"name":"authors.firstname","type":"string","example":"Robert","description":""}
+    ;;field:{"name":"authors.lastname","type":"string","example":"Mayernik","description":""}
     ;;field:{"name":"author_org","type":"string","example":"DataONE","description":""}
     ;;field:{"name":"creator","type":"string","example":"Nhoebelheinrich","description":""}
     ;;field:{"name":"contact","type":"string","example":"\\\"Nancy J.  Hoebelheinrich\\\"","description":""}
@@ -608,9 +609,8 @@ def learning_resources(document):
     ;;field:{"name":"access_features","type":"string","example":"Transformation","description":""}
     ;;field:{"name":"language_primary","type":"string","example":"es","description":""}
     ;;field:{"name":"languages_secondary","type":"string","example":"fr","description":""}
-    ;;field:{"name":"ed_framework","type":"string","example":"\\\"FAIR Data Principles\\\"","description":""}
-    ;;field:{"name":"ed_framework_dataone","type":"string","example":"Collect","description":""}
-    ;;field:{"name":"ed_framework_fair","type":"string","example":"Findable","description":""}
+    ;;field:{"name":"ed_frameworks.name","type":"string","example":"\\\"FAIR Data Principles\\\"","description":""}
+    ;;field:{"name":"ed_frameworks.nodes","type":"string","example":"Local Data Management","description":""}
     ;;field:{"name":"target_audience","type":"string","example":"\\\"Research scientist\\\"","description":""}
     ;;field:{"name":"purpose","type":"string","example":"\\\"Professional Development\\\"","description":""}
     ;;field:{"name":"completion_time","type":"string","example":"\\\"1 hour\\\"","description":""}
@@ -618,7 +618,8 @@ def learning_resources(document):
     ;;field:{"name":"type","type":"string","example":"\\\"Learning Activity\\\"","description":""}
     ;;field:{"name":"limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 10"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
-    ;;postjson:{"search":[{"group":"and","and":[{"string":"Data archiving","field":"keywords","type":"match"}]}]}
+    ;;postjson:{"search": [{"group": "and","and": [{"field": "keywords","string": "ethics","type": "simple"},{"field": "created","string": "2019-05-20T17:33:18Z","type": "gte"} ],"or": [{"field": "submitter_name","string": "Karl","type": "simple"}]}],"limit": 10,"offset": 5, "sort":"id asc"}
+    {"search":[{"group":"and","and":[{"string":"Data archiving","field":"keywords","type":"match"}]}]}
     """
     if document is None:
         document = 'search.json'
@@ -632,8 +633,8 @@ def learning_resources(document):
         if document != "search.json":
             return generate_documentation(learning_resources.__doc__, document, request, True)
 
-        searchstring = "status:true"
-
+        searchstring = "*:*"
+        #searchstring = "status:true"
         searchstring = append_searchstring(searchstring, request, "title")
         searchstring = append_searchstring(searchstring, request, "url")
         searchstring = append_searchstring(
@@ -700,7 +701,7 @@ def learning_resources(document):
                 start = 0
         else:
             start = 0        
-        results = resources.search(searchstring, rows=rows)
+        results = resources.search(searchstring,  fl="*,score", rows=rows)
         newresults = resources.search(searchstring, fl="id",rows=rows, start=start)
         newarray=[]
         for newres in newresults:
@@ -708,13 +709,7 @@ def learning_resources(document):
 
         session = Session(engine)
         sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
-        return format_resource_fromdb(newresults,sqlresults)
-        # results = resources.search(searchstring, rows=rows)
-
-
-
-
-        
+        return format_resource_fromdb(results,sqlresults)
 
         return format_resource(results)
 
@@ -725,7 +720,8 @@ def learning_resources(document):
 
         }
         operators = ['AND', 'NOT', 'OR']
-        searchstring = "status:true"
+        # searchstring = "status:true"
+        searchstring = "*:*"
         if request.is_json:
             content = request.get_json()
             if len(content['search']) > 0:
@@ -768,18 +764,31 @@ def learning_resources(document):
                                             ":[ \""+q['string']+"\" TO *]"
                         searchstring += ")"
 
+
+            # sort='id asc'
+            searchstringexample=searchstring
+            if 'sort' in content.keys():
+                sort = content['sort']
+                searchstringexample=searchstringexample+", sort="+str(content['sort'])
+            else:
+                sort = ""
+
             if 'limit' in content.keys():
                 rows = content['limit']
+                searchstringexample=searchstringexample+", limit="+str(content['limit'])
             else:
                 rows = 10
 
             if 'offset' in content.keys():
                 start = content['offset']
+                searchstringexample=searchstringexample+", offset="+str(content['offset'])
             else:
                 start = 0
-
-            results = resources.search(searchstring, **params, rows=rows, start=start)
-            newresults = resources.search(searchstring, **params, fl="id",rows=rows, start=start)
+            if 'example' in content.keys():
+                if content['example']==True:
+                    return {"searchstring":searchstringexample}
+            results = resources.search(searchstring, **params, fl="*,score" ,sort=sort,rows=rows, start=start)
+            newresults = resources.search(searchstring, **params, fl="id",sort=sort,rows=rows, start=start)
             newarray=[]
             for newres in newresults:
                 newarray.append(newres['id'])
@@ -860,7 +869,7 @@ def schema(collection, returntype):
 
     today = date.today().strftime("%d/%m/%Y")
     typemap = {"text_general": "General Text", "boolean": "Boolean",
-               "pdate": "Datetime", "string": "Exact Match String", "pfloat": "Floating Point"}
+               "pdate": "Datetime", "string": "Exact Match String", "pfloat": "Floating Point","booleans":"Boolean"}
     collectionmap = {"resources": "learningresources", "learningresources": "learningresources",
                      "vocabularies": "taxonomies", "taxonomies": "taxonomies", "user": "users", "users": "users"}
     r = requests.get(app.config["SOLR_ADDRESS"] +
@@ -874,8 +883,10 @@ def schema(collection, returntype):
                 thisfield['name'] = field['name']
                 thisfield['type'] = typemap[field['type']]
                 schemajson['fields'].append(thisfield)
-                thisfield['multivalue'] = field['multiValued']
-                thisfield['required'] = field['required']
+                if 'multivalue' in field:
+                    thisfield['multivalue'] = field['multiValued']
+                if 'required' in field:
+                    thisfield['required'] = field['required']
         if returntype == "json":
             return(schemajson)
         if returntype == "md":
@@ -914,9 +925,9 @@ def vocabularies(document):
         Not yet implemented
     DELETE
         Not yet implemented
-
+;;field:{"name":"name","type":"string","example":"\\\"Organizations\\\"","description":"Name of vocabulary"}
     ;;field:{"name":"id","type":"UUID","example":"IDPLACEHOLDER","description":"ID of vocabulary"}
-    ;;field:{"name":"name","type":"string","example":"\\\"Organizations\\\"","description":"Name of vocabulary"}
+    
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     """
 
