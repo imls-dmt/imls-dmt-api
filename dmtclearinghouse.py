@@ -17,6 +17,8 @@ import threading
 import time
 import random
 import string
+import smtplib
+from email.message import EmailMessage
 
 # Create flask app
 app = Flask(__name__)
@@ -1164,7 +1166,95 @@ def protected():
 def hello():
     return "DMT Clearinghouse."
 
+def validate_groups(grouparray):
+    valid=True
+    for group in grouparray:
+        if group not in ["admin","editor","reviewer","submitter"]:
+            valid=False
+    return(valid)
 
+
+def validate_timezone(tz):
+    timezones_search=taxonomies.search("name:timezones")
+    timezones =timezones_search.docs[0]
+    if tz in timezones['values']:
+        return True
+    return False
+
+@app.route("/user/<action>", methods=['POST'])
+def user(action):
+    #return action
+    returnjson={"status":"success"}
+    usercontent=None
+    if request.is_json:
+        usercontent = request.get_json()
+    if usercontent:
+        if action=="add":
+            if all (key in usercontent for key in ("name","email")):
+                if len(usercontent['name'])>0 and len(usercontent['email'])>0:
+
+                    results = users.search("name:\""+usercontent['name']+"\"", rows=1)
+                    if len(results.docs)==0:
+                        emailresults = users.search("email:\""+usercontent['email']+"\"", rows=1)
+                        if len(emailresults.docs)==0:
+                            hashpw=None
+                            groups=None
+                            enabled=True
+                            timezone="America/Denver"
+                            if "password" in usercontent:
+                                hashpw=drash.encode(usercontent["password"])
+                            else:
+                                hashpw=drash.encode(randomString(20))
+                            if "groups" in usercontent:
+                                if validate_groups(usercontent["groups"]):
+                                    groups=usercontent["groups"]
+                                else:
+                                    groups=["submitter"]
+                            else:
+                                groups=["submitter"]
+                            if "timezone" in usercontent:
+                                if validate_timezone(usercontent["timezone"]):
+                                    timezone=usercontent["timezone"]
+                            if "enabled" in usercontent:
+                                enabled=usercontent["enabled"]
+                            email=usercontent['email']
+                            name=usercontent['name']
+                            userjson={
+                                    "hash":hashpw,
+                                    "name":name,
+                                    "email":email,
+                                    "timezone":timezone,
+                                    "groups":groups,
+                                    "enabled":enabled,
+                                    "id":str(uuid.uuid4())
+                                    }
+                            print(userjson)
+                            out=users.add([userjson])
+                            test = users.commit()
+                            print(out)
+                            print(test)
+
+                            msg = EmailMessage()
+                            msg.set_content("Message goes here")
+
+                            msg['Subject'] = 'An account for '+request.host_url+' has been created.'
+                            msg['From'] = 'noreply@'+request.host_url
+                            msg['To'] = email
+
+                            s = smtplib.SMTP('localhost')
+                            s.send_message(msg)
+                            s.quit()
+
+                        else:
+                            return({"status":"error","message":"user \'"+emailresults.docs[0]["name"]+"\' with email "+usercontent['email']+" already exists. No action taken."})
+                    else:
+                        return({"status":"error","message":"user "+usercontent['name']+" already exists. No action taken."})
+                else:
+                    return({"status":"error","message":"To create a user both name and email need to be provided."})
+            else:
+                return({"status":"error","message":"To create a user both name and email keys need to be in json provided."})
+
+    return(returnjson)
 @app.route("/static/<path:path>")
 def send_static(path):
     return send_from_file('static', path)
