@@ -248,6 +248,40 @@ def get_score(results,uuid):
         if res['id']==uuid:
             score=res['score']
     return score
+
+def format_resource_jsonld_fromdb(results,sqlresults):
+    # lrtemplate=temlate_doc('learningresources')
+    returnval = json.loads('{ "documentation":"'+request.host_url +
+                           'api/resources/documentation.html","results":[], "facets":{}}')
+    for solrres in results:
+
+        for result in sqlresults:
+            returnjsonresult=json.loads(result.value)
+            list_keys = list(returnjsonresult.keys())
+
+            for k in list_keys:
+                if k.startswith('facet_'):
+                    returnjsonresult.pop(k)
+
+            if returnjsonresult["id"]==solrres['id']:
+                # returnjsonresult['score']=get_score(results,returnjsonresult['id'])
+                newobj={"@context": "http://schema.org/","@type": "CreativeWork",}
+                newobj["name"]=returnjsonresult['title']
+                newobj["identifier"]=returnjsonresult["id"]
+                returnval['results'].append(newobj)
+
+    if "facet_fields" in results.facets.keys():
+        for rf in resources_facets:
+            rfobject = {}
+            if rf in results.facets['facet_fields'].keys():
+                for value, number in zip(results.facets['facet_fields'][rf][0::2], results.facets['facet_fields'][rf][1::2]):
+                    if number > 0:
+                        rfobject[value] = number
+            returnval['facets'][rf.replace('facet_', '')] = rfobject
+    returnval['hits-total'] = results.hits
+    returnval['hits-returned'] = len(results)
+    return returnval
+
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
