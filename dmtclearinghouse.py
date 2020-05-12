@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, Date, Boolean, JSON
 from sqlalchemy.orm import sessionmaker
 import uuid
+import string
 
 # Create flask app
 app = Flask(__name__)
