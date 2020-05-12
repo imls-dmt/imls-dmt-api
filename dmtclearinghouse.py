@@ -996,6 +996,36 @@ def urlcheck():
     else:
         return("You must be a logged in as admin to start a check.")
    
+@app.route("/api/access/<id>", methods=['GET'])
+def access(id): #fart
+    """ 
+    GET:
+        Logs resource access.
+        
+        Parameters: 
+
+            id :  The ID of the resource being accessed.
+
+        Returns: 
+            respones:HTTPD STATUS
+    POST:
+        Not  implemented
+    PUT
+        Not  implemented
+    DELETE
+        Not  implemented
+
+    """
+
+    idresults = resources.search("id:"+id, fl="id")
+    #If the id exists as a resource...
+    if len(idresults)>0:
+        add_timestamp(id,"access")
+    #else return id not found.. 
+    else:
+        return("ID not found")
+    return ''
+
 @app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET'])
 @app.route("/api/vocabularies/<document>", methods=['GET'])
 def vocabularies(document):
