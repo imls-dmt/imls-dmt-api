@@ -962,6 +962,24 @@ def add_timestamp(id,timestamp_type):
         timestamps.add([timestamp_json])
         timestamps.commit()
         return("")
+
+
+def check_urls():
+    resourcelist = resources.search("*:*", fl="id,url", rows=100000)
+    for resource in resourcelist:
+        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+        print(resource["url"])
+        r = requests.head(resource["url"],allow_redirects=True)
+        if r.status_code == 200:
+            
+            add_timestamp(resource["id"],"success")
+        else:
+            print("########################################################")
+            print(r.status_code)
+            print('Web site does not exists!')
+            print(resource["id"]) 
+            add_timestamp(resource["id"],"fail")
+    #time.sleep(10)
 @app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET'])
 @app.route("/api/vocabularies/<document>", methods=['GET'])
 def vocabularies(document):
