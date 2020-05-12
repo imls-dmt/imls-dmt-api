@@ -980,6 +980,22 @@ def check_urls():
             print(resource["id"]) 
             add_timestamp(resource["id"],"fail")
     #time.sleep(10)
+@app.route("/admin/urlcheck/",  methods=['GET'])
+def urlcheck():
+   
+    if current_user.is_authenticated:
+        if "admin" in current_user.groups:
+            print("starting stuff")
+            linkcheck = threading.Thread(target=check_urls)
+            linkcheck.start()
+            print("returning stuff")
+            return("You are admin")
+
+        else:
+            return("You must be admin")
+    else:
+        return("You must be a logged in as admin to start a check.")
+   
 @app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET'])
 @app.route("/api/vocabularies/<document>", methods=['GET'])
 def vocabularies(document):
