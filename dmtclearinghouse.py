@@ -42,6 +42,7 @@ resources = pysolr.Solr(
     app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
 users = pysolr.Solr(app.config["SOLR_ADDRESS"]+"users/", timeout=10)
 taxonomies = pysolr.Solr(app.config["SOLR_ADDRESS"]+"taxonomies/", timeout=10)
+timestamps = pysolr.Solr(app.config["SOLR_ADDRESS"]+"timestamps/", timeout=10)
 # flask_login implementation.
 login_manager = LoginManager()
 login_manager.init_app(app)
