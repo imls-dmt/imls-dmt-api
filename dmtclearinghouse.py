@@ -940,6 +940,28 @@ def schema(collection, returntype):
     return(schemajson)
 
 
+def add_timestamp(id,timestamp_type):
+    now = datetime.now()
+    nowstr=now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    #If id does not create it with new timestamp_type entry
+    tsresult=timestamps.search("id:"+id)
+    if len(tsresult)==0:
+        timestamp_json = json.loads('{ "id":"'+id+'"}')
+        timestamp_json[timestamp_type]=[nowstr]
+        #print(timestamp_json)
+        timestamps.add([timestamp_json])
+        timestamps.commit()
+        return("")
+    else: #If it exists in timestamps, check if "timestamp_type" exists and update it with new timestamp_type entry
+        timestamp_json=tsresult.docs[0]
+        if timestamp_type in timestamp_json:#If access exists, then append...
+            timestamp_json[timestamp_type].append(nowstr)
+        else: #otherwise add it.
+            timestamp_json[timestamp_type]=[nowstr]
+        #print(timestamp_json)
+        timestamps.add([timestamp_json])
+        timestamps.commit()
+        return("")
 @app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET'])
 @app.route("/api/vocabularies/<document>", methods=['GET'])
 def vocabularies(document):
