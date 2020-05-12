@@ -667,13 +667,13 @@ def learning_resources(document):
     if document is None:
         document = 'search.json'
     allowed_documents = ['search.json', 'documentation.html',
-                         'documentation.md', 'documentation.htm']
+                         'documentation.md', 'documentation.htm', 'search.jsonld']
 
     if document not in allowed_documents:
         return render_template('bad_document.html', example="search.json"), 400
 
     if request.method == 'GET':
-        if document != "search.json":
+        if "search" not in document:
             return generate_documentation(learning_resources.__doc__, document, request, True)
 
         searchstring = "*:*"
