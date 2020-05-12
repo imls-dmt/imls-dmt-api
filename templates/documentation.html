@@ -23,6 +23,14 @@
     </style>
 
     <script>
+            function IsJsonString(str) {
+                try {
+                    JSON.parse(str);
+                } catch (e) {
+                    return false;
+                }
+                return true;
+            }
         $(document).ready(function () {
             $('.collapsible').collapsible();
 
@@ -51,7 +59,7 @@
             $("#POST").click(function () {
 
                 jsondata = $('#tryitpost').val()
-                console.log()
+                console.log(jsondata)
 
                 $.ajax({
                     type: "POST",
@@ -63,6 +71,8 @@
                     //json object to sent to the authentication url
                     data: JSON.stringify(JSON.parse(jsondata)),
                     success: function (data) {
+                        console.log(data)
+                        // console.log(renderjson(data).set_sort_objects(false))
                         console.log(renderjson(data))
                         document.getElementById("postresult").appendChild(renderjson(data));
                         // alert("Thanks!");
@@ -73,7 +83,64 @@
 
 
             });
+            // $('#tryitpost').change(
+            //     function() {
+            //    console.log("tryitchange")
+            //     }
+            // )
+            if ("{{docjson.current_route}}"=="/api/resources/"){
+            $('#tryitpost').on('keyup ', json_check);
+            }
+
+
+            function json_check() {
+                jsonval=""
+                
+                var jsonval = $('#tryitpost').val();
+                
+                jsonval['example']=true
+                if (IsJsonString(jsonval)){
+                    obj = JSON.parse(jsonval)
+                    obj['example']=true
+                    console.log(obj)
+                    jsonval=JSON.stringify(obj)
+                    //console.log(jsonval)
+                    $.ajax({
+                        type: "POST",
+                        url: '{{docjson.current_route}}',
+                        dataType: 'json',
+                        contentType: 'application/json',
+                        async: false,
+                        //json object to sent to the authentication url
+                        data: JSON.stringify(JSON.parse(jsonval)),
+                        success: function (data) {
+                            console.log(data["searchstring"])
+                            $("#luceneexample").text( data["searchstring"] );
+                            // console.log(renderjson(data).set_sort_objects(false))
+                            // console.log(renderjson(data))
+                            // document.getElementById("postresult").appendChild(renderjson(data));
+                            // alert("Thanks!");
+                        },error:function (data) {
+                            console.log(data)
+                            console.log(data)
+                            // console.log(renderjson(data).set_sort_objects(false))
+                            // console.log(renderjson(data))
+                            // document.getElementById("postresult").appendChild(renderjson(data));
+                            // alert("Thanks!");
+                        }
+                    })
+                }
+                // if (username == "" || username.length < 4) {
+                //     alert("error");
+                // }
+            }
+
+            json_check();
+
             {% endif %}
+
+
+
 
 
         });
@@ -203,17 +270,18 @@ $.ajax({
                     </div>
                     <button class="waves-effect waves-light btn" id="GET">GET</button><span
                         style="font-size: small;color: gray;">
-                        <--Click here.</span> <div>The server responses will appear below. Expand the response to view
-                            it.
+                        <--Click here.</span>
+                            <div>The server responses will appear below. Expand the response to view
+                                it.
+                            </div>
+                            <div class="card " style="overflow: scroll;">
+                                <div id="result" style="margin: 20px;"></div>
+                            </div>
+                            {% endif %}
                 </div>
-                <div class="card " style="overflow: scroll;">
-                    <div id="result" style="margin: 20px;"></div>
-                </div>
-                {% endif %}
             </div>
         </div>
-    </div>
-    <div class="col s3"></div>
+        <div class="col s3"></div>
 
     </div>
     {% endif %}
@@ -331,19 +399,25 @@ $.ajax({
                             <label for="tryitpost">Post JSON</label>
                         </div>
                     </div>
+                  
+                    <div class="row">
+                        <span>Lucene Search:<div id="luceneexample"></div></span>
+                    </div>
+                    <br>
                     <button class="waves-effect waves-light btn" id="POST">POST</button><span
                         style="font-size: small;color: gray;">
-                        <--Click here.</span> <div>The server responses will appear below. Expand the response to view
-                            it.
+                        <--Click here.</span>
+                            <div>The server responses will appear below. Expand the response to view
+                                it.
+                            </div>
+                            <div class="card " style="overflow: scroll;">
+                                <div id="postresult" style="margin: 20px;"></div>
+                            </div>
+                            {% endif %}
                 </div>
-                <div class="card " style="overflow: scroll;">
-                    <div id="postresult" style="margin: 20px;"></div>
-                </div>
-                {% endif %}
             </div>
         </div>
-    </div>
-    <div class="col s3"></div>
+        <div class="col s3"></div>
 
     </div>
     {% endif %}
