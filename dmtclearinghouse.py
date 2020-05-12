@@ -21,6 +21,10 @@ import string
 # Create flask app
 app = Flask(__name__)
 
+def randomString(stringLength=8):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
 # Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
 engine = create_engine(app.config["CONNECT_STRING"])
