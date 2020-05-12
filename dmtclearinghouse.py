@@ -752,9 +752,10 @@ def learning_resources(document):
 
         session = Session(engine)
         sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
+        if document == "search.jsonld":
+            return format_resource_jsonld_fromdb(results,sqlresults)
+        if document == "search.json":
         return format_resource_fromdb(results,sqlresults)
-
-        return format_resource(results)
 
     if request.method == 'POST':
         params = {
@@ -810,6 +811,12 @@ def learning_resources(document):
 
             # sort='id asc'
             searchstringexample=searchstring
+            returntype="json"
+            if 'format' in content.keys():
+                returntype = content['format']
+            else:
+                returntype="json"
+            
             if 'sort' in content.keys():
                 sort = content['sort']
                 searchstringexample=searchstringexample+", sort="+str(content['sort'])
@@ -838,6 +845,10 @@ def learning_resources(document):
 
             session = Session(engine)
             sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
+            
+            if returntype == "jsonld":
+                return format_resource_jsonld_fromdb(results,sqlresults)
+            else:
             return format_resource_fromdb(results,sqlresults)
 
         else:
