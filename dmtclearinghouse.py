@@ -19,6 +19,9 @@ import random
 import string
 import smtplib
 from email.message import EmailMessage
+from flask_oauthlib.provider import OAuth2Provider
+from oauthlib.oauth2 import WebApplicationClient, BackendApplicationClient
+from requests_oauthlib import OAuth2Session
 
 # Create flask app
 app = Flask(__name__)
@@ -1272,6 +1275,90 @@ def user(action):
 def send_static(path):
     return send_from_file('static', path)
 
+
+orcid_client_id = app.config["ORCID_CLIENT_ID"]
+orcid_client_secret = app.config["ORCID_CLIENT_SECRET"]
+orcid_discovery_url = app.config["ORCID_AUTH_URL"]
+orcid_exchange_url = app.config["ORCID_EXCHANGE_URL"]
+orcid_redirect_url = app.config["ORCID_REDIRECT_URL"]
+
+orcid_client = WebApplicationClient(orcid_client_id)
+
+@app.route("/orcid_sign_in", methods = ["GET", "POST"])
+def orcid_sign_in():
+    request_uri = orcid_client.prepare_request_uri(
+        orcid_discovery_url,
+        redirect_uri= orcid_redirect_url,
+        scope="openid",  #use "openid" or "/authenticate"
+    )
+    return redirect(request_uri)
+
+@app.route("/orcid_sign_in/orcid_callback", methods = ["GET", "POST"])
+def orcid_callback():
+    
+    code = request.args.get("code")
+    token_endpoint = orcid_exchange_url
+    # TODO look at documentation for prepare_token_request() and see how a request is made at 
+    # https://members.orcid.org/api/oauth/3legged-oauth
+    token_url, headers, body = orcid_client.prepare_token_request(
+        token_endpoint,
+        authorization_response=request.url,
+        redirect_url=request.base_url,
+        code=code,
+        client_secret = orcid_client_secret
+    )
+
+    token_response = requests.post(
+        token_url,
+        headers=headers,
+        data=body,
+        auth=(orcid_client_id, orcid_client_secret),
+    )
+    orcid_client.parse_request_body_response(json.dumps(token_response.json()))
+    orcid_id = token_response.json()['orcid']
+    userinfo_endpoint = 'https://pub.orcid.org/v2.1/' + orcid_id +'/record'
+    uri, headers, body = orcid_client.add_token(userinfo_endpoint) 
+    headers["Content-Type"] = "application/json"
+    userinfo_response = requests.get(uri, headers=headers, data=body)
+    userinfo  = userinfo_response.json()
+    email=""
+    # if userinfo.get("history").get("verified-email"):
+    if userinfo.get("person").get('emails').get("email") == []:
+        users_username = orcid_id
+    else: #TODO we should loop through these and use the email listed as primary.
+        users_username = userinfo["person"]["emails"]["email"][0]["email"]
+        email=users_username
+    userobj = users.search("name:\""+users_username+"\"", rows=1)
+    newuuid=str(uuid.uuid4())
+    session = Session(engine)
+    if len(userobj.docs)==0:
+        
+                                        
+        hashpw=drash.encode(randomString())
+        userjson={
+        "hash":hashpw,
+        "name":users_username,
+        "email":email,
+        "groups":["submitter","oauth"],
+        "enabled":True,
+        "id":newuuid
+        }
+        print(userjson)
+        out=users.add([userjson])
+        test = users.commit()
+        newuser=Users(id=newuuid,value=json.dumps(userjson)) 
+        
+        session.add(newuser)
+        login_user(User(newuuid, ["submitter","oauth"], users_username))
+        return redirect(url_for('protected'))
+    else:
+        if userobj.docs[0]['enabled']
+            login_user(User(userobj.docs[0]['id'], userobj.docs[0]['groups'], userobj.docs[0]['name']))
+            return redirect(url_for('protected'))
+        else:
+            return "User "+userobj.docs[0]['name']+" has been disabled by admin."
+    
+    return ":)" #redirect('/protected')
 
 if __name__ == "__main__":
     app.run()
