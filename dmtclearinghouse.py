@@ -647,7 +647,7 @@ def learning_resources(document):
     ;;field:{"name":"subject","type":"string","example":"Aerospace","description":""}
     ;;field:{"name":"keywords","type":"string","example":"\\\"Data management\\\"","description":""}
     ;;field:{"name":"licence","type":"string","example":"\\\"Creative Commons\\\"","description":""}
-    ;;field:{"name":"usage_rights","type":"string","example":"USGS","description":""}
+    ;;field:{"name":"usage_info","type":"string","example":"USGS","description":""}
     ;;field:{"name":"citation","type":"string","example":"research","description":""}
     ;;field:{"name":"locator_data","type":"string","example":"\\\"10.5281/zenodo.239090\\\"","description":""}
     ;;field:{"name":"locator_type","type":"string","example":"DOI","description":""}
@@ -657,12 +657,14 @@ def learning_resources(document):
     ;;field:{"name":"language_primary","type":"string","example":"es","description":""}
     ;;field:{"name":"languages_secondary","type":"string","example":"fr","description":""}
     ;;field:{"name":"ed_frameworks.name","type":"string","example":"\\\"FAIR Data Principles\\\"","description":""}
-    ;;field:{"name":"ed_frameworks.nodes","type":"string","example":"Local Data Management","description":""}
+    ;;field:{"name":"ed_frameworks.nodes.name","type":"string","example":"Local Data Management","description":""}
+    ;;field:{"name":"ed_frameworks.nodes.description","type":"string","example":"x","description":""}
+    ;;field:{"name":"ed_frameworks.nodes.url","type":"string","example":"dataone.org","description":""}
     ;;field:{"name":"target_audience","type":"string","example":"\\\"Research scientist\\\"","description":""}
     ;;field:{"name":"purpose","type":"string","example":"\\\"Professional Development\\\"","description":""}
     ;;field:{"name":"completion_time","type":"string","example":"\\\"1 hour\\\"","description":""}
     ;;field:{"name":"media_type","type":"string","example":"\\\"Moving Image\\\"","description":""}
-    ;;field:{"name":"type","type":"string","example":"\\\"Learning Activity\\\"","description":""}
+    ;;field:{"name":"lr_type","type":"string","example":"\\\"Learning Activity\\\"","description":""}
     ;;field:{"name":"limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 10"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     ;;postjson:{"search": [{"group": "and","and": [{"field": "keywords","string": "ethics","type": "simple"},{"field": "created","string": "2019-05-20T17:33:18Z","type": "gte"} ],"or": [{"field": "submitter_name","string": "Karl","type": "simple"}]}],"limit": 10,"offset": 5, "sort":"id asc"}
@@ -690,10 +692,19 @@ def learning_resources(document):
             searchstring, request, "submitter_name")
         searchstring = append_searchstring(
             searchstring, request, "submitter_email")
+        searchstring = append_searchstring(searchstring, request, "authors.givenName")
+        searchstring = append_searchstring(searchstring, request, "authors.familyName")
+        searchstring = append_searchstring(searchstring, request, "authors.name_identifier")
+        searchstring = append_searchstring(searchstring, request, "authors.name_identifier_type")
         searchstring = append_searchstring(searchstring, request, "contributors.givenName")
         searchstring = append_searchstring(searchstring, request, "contributors.familyName")
+        searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes.name")
+        searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes.description")
+        searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes.url")
         searchstring = append_searchstring(searchstring, request, "creator")
-        searchstring = append_searchstring(searchstring, request, "author_org")
+        searchstring = append_searchstring(searchstring, request, "author_org.name")
+        searchstring = append_searchstring(searchstring, request, "author_org.name_identifier")
+        searchstring = append_searchstring(searchstring, request, "author_org.name_identifier_type")
         searchstring = append_searchstring(searchstring, request, "contact")
         searchstring = append_searchstring(
             searchstring, request, "contact_org")
@@ -705,7 +716,7 @@ def learning_resources(document):
         searchstring = append_searchstring(searchstring, request, "keywords")
         searchstring = append_searchstring(searchstring, request, "licence")
         searchstring = append_searchstring(
-            searchstring, request, "usage_rights")
+            searchstring, request, "usage_info")
         searchstring = append_searchstring(searchstring, request, "citation")
         searchstring = append_searchstring(
             searchstring, request, "locator_data")
@@ -733,7 +744,7 @@ def learning_resources(document):
         searchstring = append_searchstring(
             searchstring, request, "completion_time")
         searchstring = append_searchstring(searchstring, request, "media_type")
-        searchstring = append_searchstring(searchstring, request, "type")
+        searchstring = append_searchstring(searchstring, request, "lr_type")
         searchstring = append_searchstring(searchstring, request, "author")
         searchstring = append_searchstring(searchstring, request, "id")
 
