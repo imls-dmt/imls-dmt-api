@@ -357,17 +357,17 @@ def format_resource(results):
             result['authors']=[]
             for i in range(len(result["author_firstnames"])):
                 authorobject = json.loads('{}')
-                authorobject['firstname']=result["author_firstnames"][i]
-                authorobject['lastname']=result["author_lastnames"][i]
+                authorobject['givenName']=result["author_firstnames"][i]
+                authorobject['familyName']=result["author_lastnames"][i]
                 result['authors'].append(authorobject)
-        if "contributors.firstname" in result.keys():
+        if "contributors.givenName" in result.keys():
             result['contributors'] = []
-            if result["contributors.firstname"]:
-                for i in range(len(result["contributors.firstname"])):
+            if result["contributors.givenName"]:
+                for i in range(len(result["contributors.givenName"])):
                     contributor = json.loads('{}')
-                    contributor['firstname'] = result["contributors.firstname"][i]
+                    contributor['givenName'] = result["contributors.givenName"][i]
                     if "contributors.lastname" in result.keys():
-                        contributor['lastname'] = result["contributors.lastname"][i]
+                        contributor['familyName'] = result["contributors.familyName"][i]
                     if "contributors.type" in result.keys():
                         if len(result["contributors.type"])>0:
                             contributor['type'] = result["contributors.type"][i]
@@ -634,9 +634,11 @@ def learning_resources(document):
     ;;field:{"name":"access_cost","type":"float","example":"1.0","description":""}
     ;;field:{"name":"submitter_name","type":"string","example":"\\\"Amber E Budden\\\"","description":""}
     ;;field:{"name":"submitter_email","type":"string","example":"example@example.com","description":""}
-    ;;field:{"name":"authors.firstname","type":"string","example":"Robert","description":""}
-    ;;field:{"name":"authors.lastname","type":"string","example":"Mayernik","description":""}
-    ;;field:{"name":"author_org","type":"string","example":"DataONE","description":""}
+    ;;field:{"name":"authors.givenName","type":"string","example":"Robert","description":""}
+    ;;field:{"name":"authors.familyName","type":"string","example":"Mayernik","description":""}
+    ;;field:{"name":"contributors.givenName","type":"string","example":"Robert","description":""}
+    ;;field:{"name":"contributors.familyName","type":"string","example":"HOEBELHEINRICH","description":""}
+    ;;field:{"name":"author_org.name","type":"string","example":"DataONE","description":""}
     ;;field:{"name":"creator","type":"string","example":"Nhoebelheinrich","description":""}
     ;;field:{"name":"contact","type":"string","example":"\\\"Nancy J.  Hoebelheinrich\\\"","description":""}
     ;;field:{"name":"contact_org","type":"string","example":"NASA","description":""}
@@ -688,8 +690,8 @@ def learning_resources(document):
             searchstring, request, "submitter_name")
         searchstring = append_searchstring(
             searchstring, request, "submitter_email")
-        searchstring = append_searchstring(searchstring, request, "author_firstnames")
-        searchstring = append_searchstring(searchstring, request, "author_lasttnames")
+        searchstring = append_searchstring(searchstring, request, "contributors.givenName")
+        searchstring = append_searchstring(searchstring, request, "contributors.familyName")
         searchstring = append_searchstring(searchstring, request, "creator")
         searchstring = append_searchstring(searchstring, request, "author_org")
         searchstring = append_searchstring(searchstring, request, "contact")
