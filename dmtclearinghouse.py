@@ -1342,11 +1342,31 @@ def user(action):
         else:
             return{"status":"error","message":"You must be logged in to add users."},400
                 
+    if request.method == 'POST':
     returnjson={"status":"success"}
     usercontent=None
     if request.is_json:
         usercontent = request.get_json()
+        else:
+            return({"status":"error","message":"no JSON found in post"})
     if usercontent:
+            if action=="search":
+                if current_user.is_authenticated: #TODO ADMIN
+                    if "admin" in current_user.groups:
+                    if "search" in usercontent:
+                        userjson=[]
+                        print("name:"+usercontent['search']+"* OR email:"+usercontent['search']+"*")
+                        these_users=users.search("name:"+usercontent['search']+"* OR email:"+usercontent['search']+"*", rows=100000)
+                        for user in these_users:
+                            user.pop('_version_', None)
+                            user.pop('hash', None)
+                            userjson.append(user)
+                        sortedusers=sorted(userjson, key=lambda k: k['name'].lower()) 
+                        returnvalue={"status":"success","users":sortedusers}
+                        return returnvalue
+                    return{"status":"error","message":"search not found in json"},400
+                    return{"status":"error","message":"You must be admin to search for users"},400
+                return{"status":"error","message":"You must be authenticated to search for users"},400
         if action=="add":
             if all (key in usercontent for key in ("name","email")):
                 if len(usercontent['name'])>0 and len(usercontent['email'])>0:
