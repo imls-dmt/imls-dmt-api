@@ -705,6 +705,7 @@ def learning_resources(document):
 
         searchstring = "*:*"
         #searchstring = "status:true"
+        searchstring = append_searchstring(searchstring, request, "status")
         searchstring = append_searchstring(searchstring, request, "title")
         searchstring = append_searchstring(searchstring, request, "url")
         searchstring = append_searchstring(
