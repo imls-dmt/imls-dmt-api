@@ -1412,12 +1412,34 @@ def user(action):
                                         users.add([userjson])
                                         users.commit()
 
-                            msg = EmailMessage()
-                            msg.set_content("Message goes here")
 
-                            msg['Subject'] = 'An account for '+request.host_url+' has been created.'
-                            msg['From'] = 'noreply@'+request.host_url
-                            msg['To'] = email
+                                        print("####################")
+                                        token=new_token(newuuid)
+                                        resetlink=request.host_url+"/passwordreset/?token="+token
+                                        servername=request.host_url
+                                        emailbody=render_template("adduser_email.html",username=name, resetlink=resetlink,servername=servername)
+                                        subject="Your new account for " + request.host_url
+                                        isfrom='noreply@'+request.host_url
+                                        if send_mail(emailbody,subject,isfrom,email):
+                                            newuser=Users(id=newuuid,value=json.dumps(userjson)) 
+                                            session.add(newuser)
+                                            session.commit()
+                                            return {"status":"success","message":"User account created."},200
+                                        else:
+                                            return{"status":"error","message":"Could not send email to "+usercontent['email']+"."},400
+            
+                                    else:
+                                        return{"status":"error","message":"user with email "+usercontent['email']+" already exists. No action taken."},400
+                                else:
+                                    return {"status":"error","message":"User "+usercontent['name']+" already exists. No action taken."},400
+                            else:
+                                return{"status":"error","message":"To create a user both name and email need to be provided."},400
+                        else:
+                            return{"status":"error","message":"To create a user both name and email keys need to be in json provided."},400
+                    else:
+                        return{"status":"error","message":"Only admins can add users."},400
+                else:
+                    return{"status":"error","message":"You must be logged in to add users."},400
 
                             s = smtplib.SMTP('localhost')
                             s.send_message(msg)
