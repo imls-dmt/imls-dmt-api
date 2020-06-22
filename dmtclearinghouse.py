@@ -8,6 +8,7 @@ import requests
 from weasyprint import HTML
 from datetime import date
 from datetime import datetime
+from datetime import timedelta
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, Date, Boolean, JSON
