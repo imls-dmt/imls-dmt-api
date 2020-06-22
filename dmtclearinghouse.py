@@ -1177,10 +1177,14 @@ def vocabularies(document):
             return returnval
 
 
-@app.route("/login/", methods=['POST'])
+@app.route("/login/", methods=['GET','POST'])
 def login():
     """ 
     GET:
+
+        Returns: 
+            HTML login form.
+    POST:
         Validates credentials of users and creates and stores a session.
         Form Request: 
 
@@ -1189,6 +1193,9 @@ def login():
         Returns: 
             cookie:session token
     """
+    if request.method == 'GET':
+        return render_template("login.html")
+    if request.method == 'POST':
     user_object = get_user(request.form['username'])
     if user_object:
         computed = user_object['hash']
