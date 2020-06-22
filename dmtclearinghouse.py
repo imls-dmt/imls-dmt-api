@@ -32,7 +32,7 @@ def randomString(stringLength=8):
 
 # Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
-engine = create_engine(app.config["CONNECT_STRING"])
+engine = create_engine(app.config["CONNECT_STRING"],pool_recycle=60)
 meta = MetaData()
 Base = automap_base()
 Base.prepare(engine, reflect=True)
@@ -63,8 +63,7 @@ drash = drupal_hash_utility.DrupalHashUtility()
 ###################
 #Admin Functions###
 ###################
-
-
+session = Session(engine)
 def reindex():
 
     lrcount=0
@@ -226,7 +225,6 @@ def normalize_result(result, template):
 
 def insert_new_resource(j):
     j['id']=str(uuid.uuid4())
-    session = Session(engine)
     session.add(Learningresources(id = j['id'], value=json.dumps(j)))
     try:
         session.commit()
@@ -244,7 +242,6 @@ def insert_new_resource(j):
     return({"status":"success","error":None})
 
 def update_resource(j):
-    session = Session(engine)
     session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
     
     try:
@@ -769,7 +766,6 @@ def learning_resources(document):
         for newres in newresults:
             newarray.append(newres['id'])
 
-        session = Session(engine)
         sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
         if document == "search.jsonld":
             return format_resource_jsonld_fromdb(results,sqlresults)
@@ -862,7 +858,7 @@ def learning_resources(document):
             for newres in newresults:
                 newarray.append(newres['id'])
 
-            session = Session(engine)
+
             sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
             
             if returntype == "jsonld":
@@ -1331,7 +1327,7 @@ def orcid_callback():
         email=users_username
     userobj = users.search("name:\""+users_username+"\"", rows=1)
     newuuid=str(uuid.uuid4())
-    session = Session(engine)
+ 
     if len(userobj.docs)==0:
         
                                         
@@ -1350,6 +1346,7 @@ def orcid_callback():
         newuser=Users(id=newuuid,value=json.dumps(userjson)) 
         
         session.add(newuser)
+        session.commit()
         login_user(User(newuuid, ["submitter","oauth"], users_username))
         return redirect(url_for('protected'))
     else:
