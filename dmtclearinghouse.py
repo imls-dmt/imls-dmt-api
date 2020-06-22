@@ -1440,19 +1440,39 @@ def user(action):
                         return{"status":"error","message":"Only admins can add users."},400
                 else:
                     return{"status":"error","message":"You must be logged in to add users."},400
+            if action=="edit":
+                if current_user.is_authenticated:
+                    if "admin" in current_user.groups:
+                        if usercontent['id']:
+                            account = users.search("id:\""+usercontent['id']+"\"", rows=1)
+                            if len(account.docs)!=0:
+                                
+                                accountinfo=account.docs[0]
+                                accountinfo.pop('_version_', None)
+                                if usercontent['name']:
+                                    accountinfo['name']=usercontent['name']
+                                if usercontent['email']:
+                                    accountinfo['email']=usercontent['email']
+                                if usercontent['timezone']:
+                                    accountinfo['timezone']=usercontent['timezone']
+                                if usercontent['groups']:
+                                    accountinfo['groups']=usercontent['groups']
+                                if usercontent['enabled']:
+                                    accountinfo['enabled']=usercontent['enabled']
+                                out=users.add([accountinfo])
+                                users.commit()
+                                Users(id=usercontent['id'],value=json.dumps(accountinfo)) 
+                                return{"status":"success","message":"Account info for "+usercontent['name']+" has been updated"},200
 
-                            s = smtplib.SMTP('localhost')
-                            s.send_message(msg)
-                            s.quit()
 
                         else:
-                            return({"status":"error","message":"user \'"+emailresults.docs[0]["name"]+"\' with email "+usercontent['email']+" already exists. No action taken."})
+                                return{"status":"error","message":"UUID for user not found."},400
                     else:
-                        return({"status":"error","message":"user "+usercontent['name']+" already exists. No action taken."})
+                            return{"status":"error","message":"No account ID in json post"},400   
                 else:
-                    return({"status":"error","message":"To create a user both name and email need to be provided."})
+                        return{"status":"error","message":"Only admins can add users."},400
             else:
-                return({"status":"error","message":"To create a user both name and email keys need to be in json provided."})
+                    return{"status":"error","message":"You must be logged in to add users."},400
 
     return(returnjson)
 @app.route("/static/<path:path>")
