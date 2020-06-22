@@ -27,7 +27,7 @@ from requests_oauthlib import OAuth2Session
 app = Flask(__name__)
 
 def randomString(stringLength=8):
-    letters = string.ascii_lowercase
+    letters = string.hexdigits
     return ''.join(random.choice(letters) for i in range(stringLength))
 
 # Pull config info from file
