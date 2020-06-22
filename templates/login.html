@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" src="/static/renderjson/renderjson.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+
+
+</head>
+
+
+<body>
+    <div class="row">
+        <div class="col s4"></div>
+        <div class="col s4">
+
+            <div class="card " style="margin-top: 131px;">
+
+                <div class="card-content ">
+                    <span class="card-title" style="background-color: whitesmoke;text-align: center;">Login</span>
+                    <p></p>
+                </div>
+                <div class="card-action">
+
+
+                    <form action='/login/' method='POST'>
+                        <input type='text' name='username' id='username' placeholder='username'/>
+                        <input type='password' name='password' id='password' placeholder='password'/>
+                        <input class="waves-effect waves-light btn" type='submit' name='submit'/>
+                       </form>
+
+
+                    </div>
+
+
+
+
+
+
+                </div>
+            </div>
+        </div>
+        <div class="col s4"></div>
+
+
+    </div>
+
+
+
+</body>
+
+<script>
+users={{userjson|safe}}
+
+// $('.pwfield').keyup(function() {
+//     username=$('#username').val()
+//     email=$('#email').val()
+//     if ((email.length>4)&&(username.length>0)){
+//         console.log("good");
+//         // $("#loginbutton").prop("disabled",false);
+//         console.log($("#adduserbutton"))
+//         $("#adduserbutton").removeAttr('disabled');
+//     }else{
+//         console.log("bad")
+//         $( "a" ).prop( "disabled", true )
+//         $("#adduserbutton").attr("disabled", true);
+
+//     }
+
+// });
+
+// token='{{token}}'
+
+// $('#adduserbutton').click(function() {
+//     console.log(username)
+//     console.log(email)
+//     jdata={'name':username,'email':email}
+//    // console.log(data)
+//     $.ajax({
+//         type: "POST",
+//         url: '/user/add',
+//         dataType: 'json',
+//         contentType: 'application/json',
+//         async: false,
+//         //json object to sent to the authentication url
+//         data: JSON.stringify(jdata),
+//         success: function (data) {
+
+//             if (data['status']=='success'){
+//                 $('#username').val('')
+//                 $('#email').val('')
+//                 console.log(data)
+//                 var toastHTML = '<span>'+data['message']+'</span><button class="btn-flat toast-action">OK</button>';
+//                 M.toast({html: toastHTML});
+
+//             }else{
+//                 var toastHTML = '<span>'+data['message']+'</span><button class="btn-flat toast-action">OK</button>';
+//                 var toastHTML = '<span>Server response was 200, but return message was not understood.</span><button class="btn-flat toast-action">OK</button>';
+//                 M.toast({html: toastHTML});
+//             }
+//             // console.log(data["searchstring"])
+//             // $("#luceneexample").text( data["searchstring"] );
+//             // console.log(renderjson(data).set_sort_objects(false))
+//             // console.log(renderjson(data))
+//             // document.getElementById("postresult").appendChild(renderjson(data));
+//             // alert("Thanks!");
+//         },error:function (data) {
+//             console.log(data['responseJSON'])
+//             var toastHTML = '<span>'+data['responseJSON']['message']+'</span><button class="btn-flat toast-action">OK</button>';
+//             M.toast({html: toastHTML});
+
+//             // console.log(data)
+//             // console.log(renderjson(data).set_sort_objects(false))
+//             // console.log(renderjson(data))
+//             // document.getElementById("postresult").appendChild(renderjson(data));
+//             // alert("Thanks!");
+//         }
+//     })
+// });
+
+</script>
+
+</html>
