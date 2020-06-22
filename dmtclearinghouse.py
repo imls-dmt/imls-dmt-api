@@ -1240,8 +1240,76 @@ def validate_timezone(tz):
         return True
     return False
 
-@app.route("/user/<action>", methods=['POST'])
+def new_token(uuid):
+    token_string=randomString(40)
+    newtoken=Tokens(token=token_string,date=datetime.now(),uuid=uuid) 
+    session.add(newtoken)
+    session.commit()
+    return token_string
+
+def send_mail(message,subject,isfrom,isto):
+    try:
+        msg = EmailMessage()
+        msg.set_content(message)
+
+        msg['Subject'] = subject
+        msg['From'] = isfrom
+        msg['To'] = isto
+
+        s = smtplib.SMTP('localhost')
+        s.send_message(msg)
+        s.quit()
+        return True
+    except:
+        return False
+
+
+@app.route("/passwordreset/", methods=['GET','POST'])
+def passwordreset():
+    yesterday=datetime.now() - timedelta(days=1)
+    if request.method == 'GET':
+        
+        if request.args.get('token'):
+            token = request.args.get('token')
+            tokentuple=session.query(Tokens.token).filter(Tokens.token == token).filter(Tokens.date>=yesterday).first()
+            if tokentuple:
+                return render_template("password_reset.html",token=token,url=request.host_url+"passwordreset/")
+            # print(tokentuple)
+            return {"status":"error","message":"token not found."}
+        else: 
+            return({"status":"error","message":"no token in arguments list"})
+    if request.method == 'POST':
+        usercontent = request.get_json()
+        if usercontent['token'] and usercontent['pass']:
+            tokentuple=session.query(Tokens.uuid).filter(Tokens.token == usercontent['token']).filter(Tokens.date>=yesterday).first()
+            if tokentuple: #change the password and remove token then respond with gr86S
+                this_user=users.search("id:\""+tokentuple[0]+"\"", rows=1)
+                if len(this_user.docs)!=0:
+                    hashpw=drash.encode(usercontent['pass'])
+                    userjson=this_user.docs[0]
+                    userjson.pop('_version_', None)
+                    userjson['hash']=hashpw
+
+                    users.add([userjson])
+                    users.commit()
+                    #remove token from mysql
+                    tokens_to_delete=session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
+                    for ttd in tokens_to_delete:
+                        print(ttd)
+                        session.delete(ttd)
+                        session.commit()
+                    return({"status":"success","message":"password updated"})
+                else:
+                    return({"status":"error","message":"token not found or expired."})
+            return({"status":"error","message":"token not found or expired."})
+        else:
+            return({"status":"error","message":"keys token and pass are required."})
+
+        return":)"
+
+@app.route("/user/<action>", methods=['GET','POST'])
 def user(action):
+
     #return action
     if request.method == 'GET':
         if action=="pwreset":
