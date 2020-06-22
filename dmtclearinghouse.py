@@ -39,6 +39,7 @@ Base.prepare(engine, reflect=True)
 Learningresources = Base.classes.learningresources
 Users =Base.classes.users
 Taxonomies = Base.classes.taxonomies
+Tokens = Base.classes.tokens
 
 resources_facets = ["facet_author_org", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher", "facet_access_features",
                     "facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type"]
