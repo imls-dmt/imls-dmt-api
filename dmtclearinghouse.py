@@ -1368,6 +1368,8 @@ def user(action):
                     return{"status":"error","message":"You must be admin to search for users"},400
                 return{"status":"error","message":"You must be authenticated to search for users"},400
         if action=="add":
+                if current_user.is_authenticated:
+                    if "admin" in current_user.groups:
             if all (key in usercontent for key in ("name","email")):
                 if len(usercontent['name'])>0 and len(usercontent['email'])>0:
 
@@ -1378,7 +1380,10 @@ def user(action):
                             hashpw=None
                             groups=None
                             enabled=True
-                            timezone="America/Denver"
+                                        if usercontent['timezone']:
+                                            timezone=usercontent['timezone']
+                                        else:
+                                            timezone=""
                             if "password" in usercontent:
                                 hashpw=drash.encode(usercontent["password"])
                             else:
@@ -1390,13 +1395,11 @@ def user(action):
                                     groups=["submitter"]
                             else:
                                 groups=["submitter"]
-                            if "timezone" in usercontent:
-                                if validate_timezone(usercontent["timezone"]):
-                                    timezone=usercontent["timezone"]
                             if "enabled" in usercontent:
                                 enabled=usercontent["enabled"]
                             email=usercontent['email']
                             name=usercontent['name']
+                                        newuuid=str(uuid.uuid4())
                             userjson={
                                     "hash":hashpw,
                                     "name":name,
@@ -1404,13 +1407,10 @@ def user(action):
                                     "timezone":timezone,
                                     "groups":groups,
                                     "enabled":enabled,
-                                    "id":str(uuid.uuid4())
+                                                "id":newuuid
                                     }
-                            print(userjson)
-                            out=users.add([userjson])
-                            test = users.commit()
-                            print(out)
-                            print(test)
+                                        users.add([userjson])
+                                        users.commit()
 
                             msg = EmailMessage()
                             msg.set_content("Message goes here")
