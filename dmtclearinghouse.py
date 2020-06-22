@@ -690,6 +690,7 @@ def learning_resources(document):
     ;;postjson:{"search": [{"group": "and","and": [{"field": "keywords","string": "ethics","type": "simple"},{"field": "created","string": "2019-05-20T17:33:18Z","type": "gte"} ],"or": [{"field": "submitter_name","string": "Karl","type": "simple"}]}],"limit": 10,"offset": 5, "sort":"id asc"}
     {"search":[{"group":"and","and":[{"string":"Data archiving","field":"keywords","type":"match"}]}]}
     """
+    summary=False
     if document is None:
         document = 'search.json'
     allowed_documents = ['search.json', 'documentation.html',
@@ -769,6 +770,9 @@ def learning_resources(document):
         searchstring = append_searchstring(searchstring, request, "id")
 
         rows = 10
+        if request.args.get("summary"):
+            if request.args.get("summary").lower() in ['true', '1', 't', 'y', 'yes']:
+                summary=True
         if request.args.get("limit"):
             if request.args.get("limit").isnumeric():
                 rows = int(request.args.get("limit"))
@@ -789,6 +793,9 @@ def learning_resources(document):
         if document == "search.jsonld":
             return format_resource_jsonld_fromdb(results,sqlresults)
         if document == "search.json":
+            if summary:
+                return format_resource_fromdb_summary(results)
+            else:
         return format_resource_fromdb(results,sqlresults)
 
     if request.method == 'POST':
@@ -850,7 +857,11 @@ def learning_resources(document):
                 returntype = content['format']
             else:
                 returntype="json"
+            if 'summary' in content.keys():
             
+                summary = content['summary']
+            else:
+                summary = False
             if 'sort' in content.keys():
                 sort = content['sort']
                 searchstringexample=searchstringexample+", sort="+str(content['sort'])
@@ -883,6 +894,9 @@ def learning_resources(document):
             if returntype == "jsonld":
                 return format_resource_jsonld_fromdb(results,sqlresults)
             else:
+                if summary:
+                    return format_resource_fromdb_summary(results)
+                else:
             return format_resource_fromdb(results,sqlresults)
 
         else:
