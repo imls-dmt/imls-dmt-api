@@ -700,6 +700,11 @@ def learning_resources(document):
         return render_template('bad_document.html', example="search.json"), 400
 
     if request.method == 'GET':
+        params = {
+            'facet': 'on',
+            'facet.field': resources_facets
+
+        }
         if "search" not in document:
             return generate_documentation(learning_resources.__doc__, document, request, True)
 
@@ -784,7 +789,7 @@ def learning_resources(document):
                 start = 0
         else:
             start = 0        
-        results = resources.search(searchstring,  fl="*,score", rows=rows)
+        results = resources.search(searchstring, **params, fl="*,score" ,rows=rows, start=start)
         newresults = resources.search(searchstring, fl="id",rows=rows, start=start)
         newarray=[]
         for newres in newresults:
