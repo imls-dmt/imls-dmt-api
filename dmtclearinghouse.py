@@ -1197,6 +1197,37 @@ def validate_timezone(tz):
 @app.route("/user/<action>", methods=['POST'])
 def user(action):
     #return action
+    if request.method == 'GET':
+        if action=="pwreset":
+                return render_template("password_reset_request.html")
+        if current_user.is_authenticated:
+            if "admin" in current_user.groups:
+                userjson=[]
+                results = users.search("*:*",rows=1000000)
+                groups=[]
+                for user in results:
+                    # print(user)
+                    user.pop('_version_', None)
+                    # print(user)
+                    user.pop('hash', None)
+                    # print(user)
+                    for group in user['groups']:
+                        if group not in groups:
+                            if group !="oauth":
+                                groups.append(group)
+                    userjson.append(user)
+                if action=="add":
+                    return render_template("adduser.html",groups=groups)
+                if action=="edit":
+
+                    sorteduserjson = sorted(userjson, key=lambda k: k['name'].lower())     
+                    return render_template("edit.html", userjson=sorteduserjson,groups=groups)
+ 
+            else:
+                return{"status":"error","message":"Only admins can add users."},400
+        else:
+            return{"status":"error","message":"You must be logged in to add users."},400
+                
     returnjson={"status":"success"}
     usercontent=None
     if request.is_json:
@@ -1350,7 +1381,7 @@ def orcid_callback():
         login_user(User(newuuid, ["submitter","oauth"], users_username))
         return redirect(url_for('protected'))
     else:
-        if userobj.docs[0]['enabled']
+        if userobj.docs[0]['enabled']:
             login_user(User(userobj.docs[0]['id'], userobj.docs[0]['groups'], userobj.docs[0]['name']))
             return redirect(url_for('protected'))
         else:
