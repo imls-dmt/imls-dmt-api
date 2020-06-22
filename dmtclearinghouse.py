@@ -1473,8 +1473,36 @@ def user(action):
                         return{"status":"error","message":"Only admins can add users."},400
             else:
                     return{"status":"error","message":"You must be logged in to add users."},400
+            if action=="pwreset":
+                if 'email' in usercontent:
+                    if usercontent['email']:
+                        emailresults = users.search("email:\""+usercontent['email']+"\"", rows=1)
+                    
 
-    return(returnjson)
+                        if len(emailresults.docs)!=0:
+                            if len(usercontent['email'])>0:
+                                token=new_token(emailresults.docs[0]['id'])
+                                resetlink=request.host_url+"/passwordreset/?token="+token
+                                servername=request.host_url
+                                emailbody=render_template("password_reset_email.html", resetlink=resetlink,servername=servername)
+                                subject="Password reset for " + request.host_url
+                                isfrom='noreply@'+request.host_url
+                                if send_mail(emailbody,subject,isfrom,usercontent['email']):
+                                    return({"status":"success","message":"password reset link sent."})
+                                else:
+                                    return({"status":"error","message":"could not send mail"})
+                            else:
+                                return({"status":"error","message":"required elements cannot be empty strings."})
+                        else:
+                            return({"status":"error","message":"email does not exist in api."})
+                    else:
+                        return({"status":"error","message":"email key is requried in json POST"})
+                else:
+                    return({"status":"error","message":"email not found in post json"})
+            return({"status":"error","message":"Method "+action+" not found"})
+        else:
+            return({"status":"error","message":"no JSON found in post"})
+    return("How did I get here.")
 @app.route("/static/<path:path>")
 def send_static(path):
     return send_from_file('static', path)
