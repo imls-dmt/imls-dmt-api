@@ -530,6 +530,22 @@ def unit_tests():
     tests = json.loads('{}')
     return tests
 
+
+
+def normalize_rating(id):
+    resourceresult = resources.search("id:"+id, rows=1)
+    thisresource=resourceresult.docs[0]
+    feedbackresults=feedback.search("resourceid:"+id, rows=100000000)
+    ratings=[]
+    for result in feedbackresults:
+        if 'rating' in result.keys():
+            ratings.append(result["rating"])
+    ratingsaverage=sum(ratings) / len(ratings)
+    thisresource['rating']=ratingsaverage
+    thisresourcefinal=strip_version(thisresource)
+    resources.add([thisresourcefinal])
+    resources.commit()
+
 # Add feedback Feedback
 '''{"feedback":'good stuff',
 "rating":4.9,
@@ -625,6 +641,8 @@ def addfeedback(document):
                             newfeedback=Feedback(id=newuuid,value=json.dumps(insertobj))
                             session.add(newfeedback)
                             session.commit()
+                            if content['resourceid']!="0" and 'rating' in content.keys():
+                                normalize_rating(content['resourceid'])
                             return{"status":"success","message":"feedback has been added"},200
                         except Exception as err:
                             return{"status":"error","message":str(err)},400
