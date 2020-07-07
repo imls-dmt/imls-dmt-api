@@ -1629,7 +1629,7 @@ def user(action):
                                 if validate_groups(usercontent["groups"]):
                                     groups=usercontent["groups"]
                                 else:
-                                    groups=["submitter"]
+                                                groups=["submitter","lauth"]
                             else:
                                 groups=["submitter"]
                             if "enabled" in usercontent:
