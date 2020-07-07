@@ -247,14 +247,24 @@ def insert_new_resource(j):
 def update_resource(j):
     session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
     
+    result1=resources.search("id:"+j['id'], rows=1)
+    if j['status'] != result1.docs[0]["status"]:
+        if j['status']==1:
+            add_timestamp(j['id'],"publish",current_user)
+        else:
+            j['status']=0 #set to 0 in case of funny business.
+            add_timestamp(j['id'],"un-publish",current_user)
+
     try:
-        session.commit()
+        
         resources.add([j])
+        resources.commit()
+        session.commit()
     except Exception as err:
         db_session.rollback()
         db_session.flush()
         return({"status":"fail","error":str(err)})
-
+    add_timestamp(j['id'],"update",current_user)
     return({"status":"success","error":None})
 
 def get_score(results,uuid):
