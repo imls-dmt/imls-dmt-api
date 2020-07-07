@@ -41,6 +41,7 @@ Learningresources = Base.classes.learningresources
 Users =Base.classes.users
 Taxonomies = Base.classes.taxonomies
 Tokens = Base.classes.tokens
+Feedback = Base.classes.feedback
 
 resources_facets = ["facet_author_org", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
                     "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type"]
@@ -50,6 +51,7 @@ resources = pysolr.Solr(
 users = pysolr.Solr(app.config["SOLR_ADDRESS"]+"users/", timeout=10)
 taxonomies = pysolr.Solr(app.config["SOLR_ADDRESS"]+"taxonomies/", timeout=10)
 timestamps = pysolr.Solr(app.config["SOLR_ADDRESS"]+"timestamps/", timeout=10)
+feedback = pysolr.Solr(app.config["SOLR_ADDRESS"]+"feedback/", timeout=10)
 # flask_login implementation.
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -527,6 +529,113 @@ def unit_tests():
     # solr_to_mysql()
     tests = json.loads('{}')
     return tests
+
+# Add feedback Feedback
+'''{"feedback":'good stuff',
+"rating":4.9,
+"timestamp":,
+"email":"me@mysite.com",
+"resourceid":'35ab5641-2719-4faf-8b1e-2c4c57e15f5e'
+}'''
+@app.route("/api/feedback/", defaults={'document': None}, methods=['GET','POST'])
+@app.route("/api/feedback/<document>", methods=['GET', 'POST'])
+def addfeedback(document):
+    """ 
+    GET:
+        Builds Solr searches and returns results for feedback.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Not yet implemented
+    PUT
+        Not yet implemented
+    DELETE
+        Not yet implemented
+    ;;field:{"name":"resourceid","type":"","example":"IDPLACEHOLDER","description":"Generate feedback for a resource by its ID"}
+    """
+    #gen timestamp
+    if request.method == 'GET':
+        this_docstring = addfeedback.__doc__
+        if document is not None:
+            allowed_documents = ['documentation.html',
+                                    'documentation.md', 'documentation.htm']
+            if document not in allowed_documents:
+                return render_template('bad_document.html', example="documentation.html"), 400
+            else:
+   
+                result1 = resources.search("*:*", rows=1)
+                id = result1.docs[0]["id"]
+                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                
+                return generate_documentation(this_docstring, document, request, True)
+        else:
+            returnjson={'resourceid':"all",'feedback':[]}
+            if request.args.get('resourceid'):
+                returnjson['resourceid']=request.args.get('resourceid')
+                feedbackresults=feedback.search("resourceid:"+request.args.get('resourceid'), rows=100000000)
+            else:
+                feedbackresults=feedback.search("*:*", rows=100000000)
+            
+            for fb in feedbackresults:
+                fb.pop('email', None)
+                returnjson["feedback"].append(fb)
+            return(returnjson)
+    if request.method == 'POST':
+        if document=="add":
+            insertobj={}
+            now = datetime.now()
+            insertobj['timestamp']=now.strftime("%Y-%m-%dT%H:%M:%SZ")
+            rating=None
+            if request.is_json:
+                content = request.get_json()
+                if 'resourceid' in content.keys():
+                    if len(content['resourceid']) > 0:
+                        
+                        results = resources.search("id:"+content['resourceid'], rows=1)
+                        #if id exists:
+                        if len(results.docs)>0 or content['resourceid']=="0":
+                            insertobj['resourceid']=content['resourceid']
+                        else:
+                            return{"status":"error","message":"resourceid must be resource UUID or 0 for sitewide feedback."},400
+                        if 'rating' in content.keys():
+                            if isinstance(content['rating'], float) or isinstance(content['rating'], int):
+                                rating=content['rating']
+                                insertobj['rating']=rating
+                            else:
+                                return{"status":"error","message":"expecting float for rating value"},400
+                        if 'email' in content.keys():
+                            insertobj['email']=content['email']
+                        else:
+                            if current_user.is_authenticated:
+                                userid=current_user.id
+                                emailresults = users.search("id:\""+userid+"\"", rows=1)
+                                insertobj['email']=emailresults.docs[0]['email']
+                        if 'feedback' in content.keys():
+                            insertobj['feedback']=content['feedback']
+                        newuuid=str(uuid.uuid4())
+                        insertobj['id']=newuuid
+                        try:
+                            feedback.add([insertobj])
+                            feedback.commit()
+                            newfeedback=Feedback(id=newuuid,value=json.dumps(insertobj))
+                            session.add(newfeedback)
+                            session.commit()
+                            return{"status":"success","message":"feedback has been added"},200
+                        except Exception as err:
+                            return{"status":"error","message":str(err)},400
+
+
+
+                else:
+                    return{"status":"error","message":"POST must include a resource ID or 0 for sitewide feedback"},400
+            else:
+                return{"status":"error","message":"No json found"},400
+
 
 # Resource interaction
 @app.route("/api/resource/", defaults={'document': None}, methods=['POST'])
