@@ -1500,6 +1500,8 @@ def user(action):
     if request.method == 'GET':
         if action=="pwreset":
                 return render_template("password_reset_request.html")
+        if action=="create":
+                return render_template("adduser_public.html")
         if current_user.is_authenticated:
             if "admin" in current_user.groups:
                 userjson=[]
@@ -1549,6 +1551,59 @@ def user(action):
                     return{"status":"error","message":"search not found in json"},400
                     return{"status":"error","message":"You must be admin to search for users"},400
                 return{"status":"error","message":"You must be authenticated to search for users"},400
+            if action=="create":
+                if all (key in usercontent for key in ("name","email")):
+                    if len(usercontent['name'])>0 and len(usercontent['email'])>0:
+                        emailresults = users.search("email:\""+usercontent['email']+"\"", rows=1)
+                        if len(emailresults.docs)==0:
+                            results = users.search("name:\""+usercontent['name']+"\"", rows=1)
+                            if len(results.docs)==0:
+                                hashpw=None
+                                groups=None
+                                enabled=True
+                                if usercontent['timezone']:
+                                    timezone=usercontent['timezone']
+                                else:
+                                    timezone=""
+                                hashpw=drash.encode(randomString(20))
+                                groups=["submitter","lauth"]
+                                email=usercontent['email']
+                                name=usercontent['name']
+                                newuuid=str(uuid.uuid4())
+                                userjson={
+                                        "hash":hashpw,
+                                        "name":name,
+                                        "email":email,
+                                        "timezone":timezone,
+                                        "groups":groups,
+                                        "enabled":enabled,
+                                        "id":newuuid
+                                        }
+                                users.add([userjson])
+                                users.commit()
+                                token=new_token(newuuid)
+                                resetlink=request.host_url+"/passwordreset/?token="+token
+                                servername=request.host_url
+                                emailbody=render_template("adduser_email.html",username=name, resetlink=resetlink,servername=servername)
+                                subject="Your new account for " + request.host_url
+                                isfrom='noreply@'+request.host_url
+                                if send_mail(emailbody,subject,isfrom,email):
+                                    newuser=Users(id=newuuid,value=json.dumps(userjson)) 
+                                    session.add(newuser)
+                                    session.commit()
+                                    return {"status":"success","message":"User account created."},200
+                                else:
+                                    return{"status":"error","message":"Could not send email to "+usercontent['email']+"."},400
+    
+                            else:
+                                return {"status":"error","message":"User "+usercontent['name']+" already exists. If this is your username, please reset your password."},400
+                        else:
+                            return{"status":"error","message":"user with email "+usercontent['email']+" already exists. Redirecting to password reset page"},409
+                    else:
+                        return{"status":"error","message":"To create a user both name and email need to be provided."},400
+                else:
+                    return{"status":"error","message":"To create a user both name and email keys need to be in json provided."},400
+
         if action=="add":
                 if current_user.is_authenticated:
                     if "admin" in current_user.groups:
