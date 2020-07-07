@@ -243,6 +243,7 @@ def insert_new_resource(j):
         db_session.flush()
         return({"status":"fail","error":str(solrerr)})
     return({"status":"success","error":None})
+    add_timestamp(j['id'],"submit",current_user)
 
 def update_resource(j):
     session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
@@ -275,7 +276,6 @@ def get_score(results,uuid):
     return score
 
 def format_resource_jsonld_fromdb(results,sqlresults):
-    # lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
                            'api/resources/documentation.html","results":[], "facets":{}}')
     for solrres in results:
@@ -289,7 +289,6 @@ def format_resource_jsonld_fromdb(results,sqlresults):
                     returnjsonresult.pop(k)
 
             if returnjsonresult["id"]==solrres['id']:
-                # returnjsonresult['score']=get_score(results,returnjsonresult['id'])
                 newobj={"@context": "http://schema.org/","@type": "CreativeWork",}
                 newobj["name"]=returnjsonresult['title']
                 newobj["identifier"]=returnjsonresult["id"]
@@ -1150,28 +1149,22 @@ def schema(collection, returntype):
     return(schemajson)
 
 
-def add_timestamp(id,timestamp_type):
+def add_timestamp(id,timestamp_type,current_user):
+
+
+    if current_user.is_authenticated:
+        userid=current_user.id
+    else:
+        userid=None
     now = datetime.now()
     nowstr=now.strftime("%Y-%m-%dT%H:%M:%SZ")
     #If id does not create it with new timestamp_type entry
-    tsresult=timestamps.search("id:"+id)
-    if len(tsresult)==0:
-        timestamp_json = json.loads('{ "id":"'+id+'"}')
-        timestamp_json[timestamp_type]=[nowstr]
-        #print(timestamp_json)
+    timestamp_json = json.loads('{ "resourceid":"'+id+'"}')
+    timestamp_json['timestamp']=nowstr
+    timestamp_json['userid']=userid
+    timestamp_json['type']=timestamp_type
         timestamps.add([timestamp_json])
         timestamps.commit()
-        return("")
-    else: #If it exists in timestamps, check if "timestamp_type" exists and update it with new timestamp_type entry
-        timestamp_json=tsresult.docs[0]
-        if timestamp_type in timestamp_json:#If access exists, then append...
-            timestamp_json[timestamp_type].append(nowstr)
-        else: #otherwise add it.
-            timestamp_json[timestamp_type]=[nowstr]
-        #print(timestamp_json)
-        timestamps.add([timestamp_json])
-        timestamps.commit()
-        return("")
 
 
 def check_urls():
