@@ -1231,7 +1231,7 @@ def access(id):
         return("ID not found")
     return ''
 
-@app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET'])
+@app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/vocabularies/<document>", methods=['GET'])
 def vocabularies(document):
     """ 
@@ -1255,6 +1255,24 @@ def vocabularies(document):
     
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     """
+
+    if document == "edit":
+        if current_user.is_authenticated:
+            if "admin" in current_user.groups:
+                return render_template("edit_vocab.html")
+            else:
+                return{"status":"error","message":"Only admins can edit vocabularies."},400
+        else:
+            return{"status":"error","message":"Only admins can edit vocabularies."},400
+
+    if document == "add":
+        if current_user.is_authenticated:
+            if "admin" in current_user.groups:
+                return render_template("add_vocab.html")
+            else:
+                return{"status":"error","message":"Only admins can add vocabularies."},400
+        else:
+            return{"status":"error","message":"Only admins can add vocabularies."},400
 
     if document is None:
         document = 'search.json'
@@ -1289,23 +1307,64 @@ def vocabularies(document):
                 searchstring = append_searchstring(searchstring, request, "id")
                 returnval = json.loads(
                     '{ "documentation":"API documentation string will go here","results":[]}')
-                results = taxonomies.search(searchstring)
+                results = taxonomies.search(searchstring,rows=1000000)
                 for result in results:
                     result.pop('_version_', None)
                     returnval["results"].append(result)
                 returnval['hits'] = results.hits
                 returnval['hits-returned'] = len(results)
                 return returnval
+                
         else:
             returnval = json.loads(
                 '{ "documentation":"'+request.host_url+'api/vocabularies/documentation.html","results":[]}')
-            results = taxonomies.search("*:*")
+            results = taxonomies.search("*:*",rows=100000)
             for result in results:
                 result.pop('_version_', None)
                 returnval["results"].append(result)
+            returnval["results"]=sorted(returnval["results"], key=lambda k: k['name'].lower())
             returnval['hits'] = results.hits
             returnval['hits-returned'] = len(results)
             return returnval
+    if request.method == 'POST':
+        if current_user.is_authenticated:
+            if "admin" in current_user.groups:
+                if request.is_json:
+                    vocabjson  = request.get_json()
+                    #check if it has id,name, and values
+                    if all(key in vocabjson for key in ("name","values", "id")):
+                        if vocabjson['id'] and vocabjson['name'] and vocabjson['values']:
+                            #clean it up:
+                            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values']}
+                            taxonomies.add([newvocabjson])
+                            taxonomies.commit()
+                            session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
+                            session.commit()
+                            return{"status":"success","message":"json rec"},200
+                    elif all(key in vocabjson for key in ("name","values")):
+                        if vocabjson['name'] and vocabjson['values']:
+                            taxresults = taxonomies.search("name:\""+vocabjson['name']+"\"",rows=1)
+                            if len(taxresults.docs)==0:
+                                newuuid=str(uuid.uuid4())
+                                newvocabjson={'id':newuuid,'name':vocabjson['name'],'values':vocabjson['values']}
+                                taxonomies.add([newvocabjson])
+                                taxonomies.commit()
+
+                                newtax=Taxonomies(id=newuuid,value=json.dumps(newvocabjson))
+                                session.add(newtax)
+                                session.commit()
+                                return{"status":"success","message":"Vocabulary has been added."},200
+                            else:
+                                return{"status":"error","message":"Vocabulary with that title already exists."},400
+                        else:
+                            return{"status":"error","message":"json rec must have id, name and values keys"},400
+                else:
+                    return{"status":"error","message":"Vocabularies JSON expected."},400
+            else:
+                return{"status":"error","message":"Only admins can modify vocabularies."},400
+        else:
+            return{"status":"error","message":"You must be logged in"},400
+
 
 
 @app.route("/login/", methods=['GET','POST'])
