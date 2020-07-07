@@ -86,11 +86,11 @@ def reindex():
         test = resources.commit()
         res=resources.search("*:*",rows=0)
         if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['learning_resources']={"sucess":True,"count":lrcount}
+            returnj['result']['learning_resources']={"success":True,"count":lrcount}
         else:
-            returnj['result']['learning_resources']={"sucess":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
+            returnj['result']['learning_resources']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
     else:
-        returnj['result']['learning_resources']={"sucess":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Learning_Resources_IDs_count}
+        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Learning_Resources_IDs_count}
     
     lrcount=0
     Users_IDs_count=session.query(Users).count()
@@ -107,11 +107,11 @@ def reindex():
         test = users.commit()
         res=users.search("*:*",rows=0)
         if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['users']={"sucess":True,"count":lrcount}
+            returnj['result']['users']={"success":True,"count":lrcount}
         else:
-            returnj['result']['users']={"sucess":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
+            returnj['result']['users']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
     else:
-        returnj['result']['learning_resources']={"sucess":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Users_IDs_count}
+        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Users_IDs_count}
 
 
     lrcount=0
@@ -129,11 +129,11 @@ def reindex():
         test = taxonomies.commit()
         res=taxonomies.search("*:*",rows=0)
         if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['taxonomies']={"sucess":True,"count":lrcount}
+            returnj['result']['taxonomies']={"success":True,"count":lrcount}
         else:
-            returnj['result']['taxonomies']={"sucess":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
+            returnj['result']['taxonomies']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
     else:
-        returnj['result']['learning_resources']={"sucess":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Taxonomies_IDs_count}
+        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Taxonomies_IDs_count}
 
 
 
