@@ -1167,31 +1167,32 @@ def add_timestamp(id,timestamp_type,current_user):
         timestamps.commit()
 
 
+
+
+
 def check_urls():
     resourcelist = resources.search("*:*", fl="id,url", rows=100000)
     for resource in resourcelist:
-        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
-        print(resource["url"])
+        try:
         r = requests.head(resource["url"],allow_redirects=True)
         if r.status_code == 200:
-            
-            add_timestamp(resource["id"],"success")
+                pass
         else:
+                print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+                print(resource["url"])
+                print(r.status_code)
             print("########################################################")
-            print(r.status_code)
-            print('Web site does not exists!')
-            print(resource["id"]) 
-            add_timestamp(resource["id"],"fail")
-    #time.sleep(10)
+        except:
+            print("Error") 
+            print(resource["url"]) 
+
 @app.route("/admin/urlcheck/",  methods=['GET'])
 def urlcheck():
    
     if current_user.is_authenticated:
         if "admin" in current_user.groups:
-            print("starting stuff")
             linkcheck = threading.Thread(target=check_urls)
             linkcheck.start()
-            print("returning stuff")
             return("You are admin")
 
         else:
@@ -1200,7 +1201,7 @@ def urlcheck():
         return("You must be a logged in as admin to start a check.")
    
 @app.route("/api/access/<id>", methods=['GET'])
-def access(id): #fart
+def access(id):
     """ 
     GET:
         Logs resource access.
@@ -1220,11 +1221,12 @@ def access(id): #fart
 
     """
 
-    idresults = resources.search("id:"+id, fl="id")
+    idresults = resources.search("id:"+id)
     #If the id exists as a resource...
-    if len(idresults)>0:
-        add_timestamp(id,"access")
-    #else return id not found.. 
+    if len(idresults.docs)>0:
+        add_timestamp(id,"access",current_user)
+        return redirect(idresults.docs[0]["url"], code=302)
+    # else return id not found.. 
     else:
         return("ID not found")
     return ''
