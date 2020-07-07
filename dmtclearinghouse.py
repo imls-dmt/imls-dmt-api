@@ -738,7 +738,6 @@ def learning_resource(document):
                 if len(results.docs) > 0:
                     normalized_content = normalize_result(
                         results.docs[0], template)
-                    #normalized_content['authors']={"firstname": None,"lastname": None}
                     return "test"#normalized_content
                 else:
                     return "No results found"
@@ -837,7 +836,6 @@ def learning_resources(document):
             return generate_documentation(learning_resources.__doc__, document, request, True)
 
         searchstring = "*:*"
-        #searchstring = "status:true"
         searchstring = append_searchstring(searchstring, request, "status")
         searchstring = append_searchstring(searchstring, request, "title")
         searchstring = append_searchstring(searchstring, request, "url")
@@ -1402,7 +1400,6 @@ def passwordreset():
             tokentuple=session.query(Tokens.token).filter(Tokens.token == token).filter(Tokens.date>=yesterday).first()
             if tokentuple:
                 return render_template("password_reset.html",token=token,url=request.host_url+"passwordreset/")
-            # print(tokentuple)
             return {"status":"error","message":"token not found."}
         else: 
             return({"status":"error","message":"no token in arguments list"})
@@ -1423,7 +1420,6 @@ def passwordreset():
                     #remove token from mysql
                     tokens_to_delete=session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
                     for ttd in tokens_to_delete:
-                        print(ttd)
                         session.delete(ttd)
                         session.commit()
                     return({"status":"success","message":"password updated"})
@@ -1437,8 +1433,6 @@ def passwordreset():
 
 @app.route("/user/<action>", methods=['GET','POST'])
 def user(action):
-
-    #return action
     if request.method == 'GET':
         if action=="pwreset":
                 return render_template("password_reset_request.html")
@@ -1448,11 +1442,8 @@ def user(action):
                 results = users.search("*:*",rows=1000000)
                 groups=[]
                 for user in results:
-                    # print(user)
                     user.pop('_version_', None)
-                    # print(user)
                     user.pop('hash', None)
-                    # print(user)
                     for group in user['groups']:
                         if group not in groups:
                             if group !="oauth":
@@ -1483,7 +1474,6 @@ def user(action):
                     if "admin" in current_user.groups:
                     if "search" in usercontent:
                         userjson=[]
-                        print("name:"+usercontent['search']+"* OR email:"+usercontent['search']+"*")
                         these_users=users.search("name:"+usercontent['search']+"* OR email:"+usercontent['search']+"*", rows=100000)
                         for user in these_users:
                             user.pop('_version_', None)
@@ -1541,7 +1531,6 @@ def user(action):
                                         users.commit()
 
 
-                                        print("####################")
                                         token=new_token(newuuid)
                                         resetlink=request.host_url+"/passwordreset/?token="+token
                                         servername=request.host_url
@@ -1690,10 +1679,8 @@ def orcid_callback():
         email=users_username
     userobj = users.search("name:\""+users_username+"\"", rows=1)
     newuuid=str(uuid.uuid4())
- 
+    #if email not found, create it and log in the user.
     if len(userobj.docs)==0:
-        
-                                        
         hashpw=drash.encode(randomString())
         userjson={
         "hash":hashpw,
@@ -1703,7 +1690,6 @@ def orcid_callback():
         "enabled":True,
         "id":newuuid
         }
-        print(userjson)
         out=users.add([userjson])
         test = users.commit()
         newuser=Users(id=newuuid,value=json.dumps(userjson)) 
@@ -1712,6 +1698,7 @@ def orcid_callback():
         session.commit()
         login_user(User(newuuid, ["submitter","oauth"], users_username))
         return redirect(url_for('protected'))
+    #Otherwise just log in the user.
     else:
         if userobj.docs[0]['enabled']:
             login_user(User(userobj.docs[0]['id'], userobj.docs[0]['groups'], userobj.docs[0]['name']))
