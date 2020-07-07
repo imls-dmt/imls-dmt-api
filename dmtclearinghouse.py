@@ -1790,12 +1790,38 @@ def orcid_callback():
     userinfo_response = requests.get(uri, headers=headers, data=body)
     userinfo  = userinfo_response.json()
     email=""
-    # if userinfo.get("history").get("verified-email"):
+    # if there are no emails available
     if userinfo.get("person").get('emails').get("email") == []:
-        users_username = orcid_id
+        users_username = orcid_id #then username is the orcid ID
     else: #TODO we should loop through these and use the email listed as primary.
-        users_username = userinfo["person"]["emails"]["email"][0]["email"]
-        email=users_username
+        email_address_list=userinfo["person"]["emails"]["email"]
+        primary_email=""
+        for ea in email_address_list: #loop through each email and search SOLR for it.
+            emailsearchstr="email:\""+ea["email"]+"\""
+            eaobj=users.search(emailsearchstr, rows=1)
+            if len(eaobj.docs)>0: #If we find one, use it as the account to login.
+                userid=eaobj.docs[0]["id"]
+                if 'oauth' not in eaobj.docs[0]["groups"]: #If oauth is not in groups add it and update records.
+                    eaobj.docs[0]["groups"].append('oauth')
+                    session.query(Users).filter(Users.id == userid).update({Users.value:json.dumps(eaobj.docs[0])}, synchronize_session = False) #update the record.
+                    session.commit()
+                    doc=strip_version(eaobj.docs[0])
+                   
+                    users.add([doc])
+                    users.commit()
+                    #otherwise just log them in.
+                login_user(User(eaobj.docs[0]['id'], eaobj.docs[0]['groups'], eaobj.docs[0]['name']))
+                return redirect(url_for('protected'))
+            if ea['primary']:
+                primary_email=ea["email"]
+
+
+
+        #If we get here it is because no emails were found that match in the system.
+        #so we use primary e-mail for both username and email address.
+        users_username = primary_email
+        email=primary_email
+    #we could probably remove this check.
     userobj = users.search("name:\""+users_username+"\"", rows=1)
     newuuid=str(uuid.uuid4())
     #if email not found, create it and log in the user.
