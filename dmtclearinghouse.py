@@ -1178,10 +1178,8 @@ def check_urls():
         if r.status_code == 200:
                 pass
         else:
-                print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
                 print(resource["url"])
                 print(r.status_code)
-            print("########################################################")
         except:
             print("Error") 
             print(resource["url"]) 
