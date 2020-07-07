@@ -1726,15 +1726,15 @@ def user(action):
                                 if send_mail(emailbody,subject,isfrom,usercontent['email']):
                                     return({"status":"success","message":"password reset link sent."})
                                 else:
-                                    return({"status":"error","message":"could not send mail"})
+                                    return{"status":"error","message":"could not send mail"},500
                             else:
-                                return({"status":"error","message":"required elements cannot be empty strings."})
+                                return{"status":"error","message":"required elements cannot be empty strings."},400
                         else:
-                            return({"status":"error","message":"email does not exist in api."})
+                            return{"status":"error","message":"email does not exist in api."},400
                     else:
-                        return({"status":"error","message":"email key is requried in json POST"})
+                        return{"status":"error","message":"email key is requried in json POST"},400
                 else:
-                    return({"status":"error","message":"email not found in post json"})
+                    return{"status":"error","message":"email not found in post json"},400
             return({"status":"error","message":"Method "+action+" not found"})
         else:
             return({"status":"error","message":"no JSON found in post"})
