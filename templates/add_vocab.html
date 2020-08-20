@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" src="/static/renderjson/renderjson.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+
+
+</head>
+
+
+<body>
+    <div class="row">
+        <div class="col s3">
+
+        </div>
+        <div class="col s6">
+            <div class="card " style="margin-top: 131px;">
+
+                <div class="card-content ">
+                    <span class="card-title" style="background-color: whitesmoke;text-align: center;">Add Vocabulary</span>
+                    <input placeholder="" id="vocabid" type="text" style="display:none;">
+
+                    <input style="font-size: xx-large;color: teal;" placeholder="" id="vocabname" type="text" class="validate">
+                    <label for="vocabname">Name</label>
+
+
+                    <div style="cursor: inherit;overflow: auto;height: 323px;" id="valueslist" class="collection" style="cursor: pointer;">
+                 
+    
+                    </div>
+
+                </div>
+                <div class="card-action">
+                    <a id="add" class="btn-floating btn-large waves-effect waves-light red"><i class="material-icons">add</i></a>
+                    </div>
+      
+                </div>
+                <button  id="save" class="btn waves-effect waves-light"  name="action">Save
+                
+                </button>
+            </div>
+
+            <div style="text-align: center;">
+   
+            </div>
+            
+        </div>
+        <div class="col s3"></div>
+
+
+
+
+
+    </div>
+
+
+
+</body>
+
+<script>
+$('#add').click(function () {
+    htmlstring='<input type="text" class="groupclass allvalues validate">'
+    $( "#valueslist" ).append( htmlstring );
+})
+results={}
+
+
+
+        $(document).ready(function () {
+            updatesearch("")
+            // $.ajax({
+            //     url: "/api/vocabularies/",
+            //     success: function (data) {
+            //         results = data.results
+            //         newhtml = ""
+            //         for (var i = 0; i < results.length; i++) {
+            //             newhtml = newhtml + '<a onclick="collectionitem(\'' + results[i]['id'] + '\')" id="' + results[i]['id'] + '" class="collection-item">' + results[i]['name'] + '</a>'
+            //         }
+            //         $('#vocablist').html(newhtml)
+            //     }, error: function (data) {
+            //     }
+            // });
+        });
+
+
+
+        function updatesearch(searchstring){
+            $.ajax({
+                url: "/api/vocabularies/"+searchstring,
+                success: function (data) {
+                    results = data.results
+                    newhtml = ""
+                    for (var i = 0; i < results.length; i++) {
+                        newhtml = newhtml + '<a onclick="collectionitem(\'' + results[i]['id'] + '\')" id="' + results[i]['id'] + '" class="collection-item">' + results[i]['name'] + '</a>'
+                    }
+                    $('#vocablist').html(newhtml)
+                    // window.location.reload();
+                    // location.href="/api/vocabularies/edit"
+                }, error: function (data) {
+                }
+            });
+        }
+
+
+
+
+
+// $('#search').keyup(function() {
+// updatesearch()
+   
+// });
+
+
+      function collectionitem(id) {
+        //  console.log(id)
+    // }
+ 
+    // $('.collection-item').click(function () {
+        // console.log("clicked")
+        // $("#userid").val(id)
+        // $("#groups option:selected").prop("selected", false);
+        
+        // $('.collection-item').removeClass('active');
+        // $("#"+id).addClass('active');
+
+
+        for (var i = 0; i < results.length; i++) {
+            if(results[i]['id']==id){
+
+                console.log(results[i])
+                $("#vocabid").val(results[i]['id'])
+                $("#vocabname").val(results[i]['name'])
+                newhtmlvalues=""
+                // console.log("V")
+                // console.log(results[i]['values'])
+                for (var i2 = 0; i2 < results[i]['values'].length; i2++) {
+                    // console.log(results[i]['values'])
+                    newhtmlvalues=newhtmlvalues+'<input type="text" value="'+results[i]['values'][i2]+'"class="groupclass allvalues validate">'
+
+                }
+                $('#valueslist').html(newhtmlvalues)
+                $("#save").prop("disabled", false);
+
+
+            }
+
+        }
+        }
+
+
+        $('#save').click(function () {
+            itemsarr = []
+            newjson = {}
+            for (var i = 0; i < $(".groupclass").length; i++) {
+                item = $(".groupclass")[i]['value']
+                if (item.length > 0) {
+                    itemsarr.push(item);
+                }
+            }
+            //newjson['id'] = $('#vocabid').val()
+            newjson['name'] = $('#vocabname').val()
+            newjson['values'] = itemsarr
+            console.log(newjson)
+
+            $.ajax({
+                type: "POST",
+                url: '/api/vocabularies/',
+                dataType: 'json',
+                contentType: 'application/json',
+                async: false,
+                data: JSON.stringify(newjson),
+                success: function (data) {
+                    console.log(data)
+                    window.location.reload();
+                }, error: function (data) {
+                    console.log(data.responseJSON.message)
+                    var toastHTML = '<span>'+data.responseJSON.message+'</span><button class="btn-flat toast-action">OK</button>';
+                    M.toast({html: toastHTML});
+                    console.log(data)
+                }
+            })
+
+
+        })
+
+
+
+//        {id: "ca75233c-2e20-4bf7-8373-90b4f8ed0bc8", name: "Educational Audiences", values: ["Citizen scientist", "Data manager", "Data policymaker", "Data professional", "Data supporter", "Early-career research scientist", "Educator", "Funding organization", "Graduate student", "High school student", "Librarian", "Mid-career research scientist", "Middle school student", "Publisher", "Repository manager", "Research faculty", "Research scientist", "Software engineer", "Technology expert group", "Undergraduate student"]}
+
+        //console.log($(".groupclass"))
+
+        // $.ajax({
+        //     type: "POST",
+        //     url: '/api/vocabularies/',
+        //     dataType: 'json',
+        //     contentType: 'application/json',
+        //     async: false,
+        //     data: JSON.stringify(searchjson),
+        //     success: function (data) {
+        //         console.log(data)
+        //         userjson = data['users']
+        //         newhtml = ""
+        //         for (var i = 0; i < userjson.length; i++) {
+
+        //             newhtml = newhtml + '<a onclick="collectionitem(\'' + userjson[i]['id'] + '\')" id="' + userjson[i]['id'] + '" class="collection-item">' + userjson[i]['name'] + '</a>'
+        //         }
+        //         $('#userlist').html(newhtml)
+        //     }, error: function (data) {
+        //         console.log(data)
+
+        //     }
+        // })
+    // })
+// function updatesearch(){
+// searchstring=$('#search').val()
+//     searchjson={"search":searchstring}
+
+//     $.ajax({
+//         type: "POST",
+//         url: '/user/search',
+//         dataType: 'json',
+//         contentType: 'application/json',
+//         async: false,
+//         data: JSON.stringify(searchjson),
+//         success: function (data) {
+//             console.log(data)
+//             userjson=data['users']
+//             newhtml=""
+//             for (var i = 0; i < userjson.length; i++) {     
+                
+//                 newhtml=newhtml+'<a onclick="collectionitem(\''+userjson[i]['id']+'\')" id="'+userjson[i]['id']+'" class="collection-item">'+userjson[i]['name']+'</a>'
+//             }   
+//             $('#vocablist').html(newhtml)
+//         },error:function (data) {
+//            console.log(data)
+
+//         }
+//     })
+// }
+
+// $('#search').keyup(function() {
+// updatesearch()
+   
+// });
+
+
+//     $('#save').click(function () {
+//         console.log("save")
+        
+        
+//         userobj = {
+//             'name': null,
+//             'email': null,
+//             'timezone': null,
+//             'groups': null,
+//             'enabled': null,
+//             'id': null
+//         }
+//         userobj['name']=$("#username").val()
+//         userobj['email']=$("#email").val()
+//         userobj['timezone']=$("#timezone").val()
+        
+//         $('#groups').formSelect()
+//         var instance = M.FormSelect.getInstance($('#groups'));
+//         var groups = instance.getSelectedValues();
+//         userobj['groups']=groups
+//         if ($( "#enabled" ).prop("checked")){
+//             userobj['enabled']='True'
+//         }else{
+//             userobj['enabled']='False'
+//         }
+//         userobj['id']=$("#userid").val()
+//         console.log(userobj)
+
+//         $.ajax({
+//         type: "POST",
+//         url: '/user/edit',
+//         dataType: 'json',
+//         contentType: 'application/json',
+//         async: false,
+//         //json object to sent to the authentication url
+//         data: JSON.stringify(userobj),
+//         success: function (data) {
+            
+//             if (data['status']=='success'){
+//                 $('#userid').val('')
+//                 $('#username').val('')
+//                 $('#email').val('')
+//                 $("#timezone").val('')
+//                 $( "#enabled" ).prop( "checked", false );
+//                 // $('.collection-item').removeClass('active');
+//                 $("#groups option:selected").prop("selected", false);
+//                 $("#groups").formSelect();
+                
+//                 $('select').formSelect();
+//                 console.log(data)
+//                 var toastHTML = '<span>'+data['message']+'</span><button class="btn-flat toast-action">OK</button>';
+//                 M.toast({html: toastHTML});
+//                 updatesearch()
+
+
+//             }else{
+//                 var toastHTML = '<span>'+data['message']+'</span><button class="btn-flat toast-action">OK</button>';
+//                 var toastHTML = '<span>Server response was 200, but return message was not understood.</span><button class="btn-flat toast-action">OK</button>';
+//                 M.toast({html: toastHTML});
+//             }
+//         },error:function (data) {
+//             console.log(data['responseJSON'])
+//             var toastHTML = '<span>'+data['responseJSON']['message']+'</span><button class="btn-flat toast-action">OK</button>';
+//             M.toast({html: toastHTML});
+ 
+
+//         }
+//     })
+
+
+//     })
+
+//     $(document).ready(function () {
+//         $('select').formSelect();
+//     });
+    
+//     True = true
+//     False = false
+//     userjson = {{ userjson | safe }}
+
+
+//     console.log(userjson)
+//     groups = {{ groups | safe }}
+
+//     // onclick="collectionitem()"
+    
+//     function collectionitem(id) {
+//     //     console.log(id)
+//     // }
+ 
+//     // $('.collection-item').click(function () {
+//         console.log("clicked")
+//         $("#userid").val(id)
+//         $("#groups option:selected").prop("selected", false);
+        
+//         $('.collection-item').removeClass('active');
+//         $("#"+id).addClass('active');
+//         for (var i = 0; i < userjson.length; i++) {
+//             var obj = userjson[i];
+
+//             if (obj.id == id) {
+
+//                 console.log(obj)
+//                 $("#username").val(obj.name)
+//                 $("#email").val(obj.email)
+//                 $("#timezone").val(obj.timezone)
+//                 $('.opt').removeClass('selected');
+//                 //$("#groups option:selected").removeAttr("selected");
+//                 if (obj.enabled){
+//                     $( "#enabled" ).prop( "checked", true );
+//                 }else{
+//                     $( "#enabled" ).prop( "checked", false );
+//                 }
+//                 // console.log(obj.groups)
+//                 for (var index = 0; index < obj.groups.length; index++) {
+//                     var groupstring = obj.groups[index];
+//                     console.log(groupstring)
+//                     $('#groups').find('option[value="'+groupstring+'"]').prop('selected', true);
+                    
+
+        
+//                 }
+//                 $("#groups").formSelect();
+//                 // console.log($("#groups").val())
+//                 $('select').formSelect();
+//             }
+//         }
+//     };
+
+
+
+</script>
+
+</html>
