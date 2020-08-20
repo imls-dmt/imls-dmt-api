@@ -9,10 +9,7 @@ from weasyprint import HTML
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Float, Date, Boolean, JSON
-from sqlalchemy.orm import sessionmaker
+from flask_sqlalchemy import SQLAlchemy
 import uuid
 import threading
 import time
@@ -33,15 +30,33 @@ def randomString(stringLength=8):
 
 # Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
-engine = create_engine(app.config["CONNECT_STRING"],pool_recycle=60)
-meta = MetaData()
-Base = automap_base()
-Base.prepare(engine, reflect=True)
-Learningresources = Base.classes.learningresources
-Users =Base.classes.users
-Taxonomies = Base.classes.taxonomies
-Tokens = Base.classes.tokens
-Feedback = Base.classes.feedback
+
+#Create db object. This will be used for all MySQL actions in this app.
+db = SQLAlchemy(app)
+
+#Create user classes manualy as we are not using standard sqlalchemy any more
+class Learningresources(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Taxonomies(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+class Users(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Feedback(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Tokens(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(16777215))
+    date = db.Column(db.DateTime)
+    uuid = db.Column(db.String(40))
+
+
 
 resources_facets = ["facet_author_org", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
                     "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type"]
@@ -66,18 +81,18 @@ drash = drupal_hash_utility.DrupalHashUtility()
 ###################
 #Admin Functions###
 ###################
-session = Session(engine)
+
 def reindex():
 
     lrcount=0
     returnj= json.loads('{"result":{}}')
-    session = Session(engine)
-    Learning_Resources_IDs_count=session.query(Learningresources).count()
+
+    Learning_Resources_IDs_count=db.session.query(Learningresources).count()
     rescount=resources.search("*:*",rows=0)
     if rescount.raw_response['response']['numFound']==Learning_Resources_IDs_count:
         resources.delete(q='*:*')
         test = resources.commit()
-        Learning_Resources_IDs_res=session.query(Learningresources).all()
+        Learning_Resources_IDs_res=db.session.query(Learningresources).all()
         Learning_Resources_JSON=[]
         for doc in Learning_Resources_IDs_res:
             Learning_Resources_JSON.append(json.loads(doc.value))
@@ -93,12 +108,12 @@ def reindex():
         returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Learning_Resources_IDs_count}
     
     lrcount=0
-    Users_IDs_count=session.query(Users).count()
+    Users_IDs_count=db.session.query(Users).count()
     rescount=users.search("*:*",rows=0)
     if rescount.raw_response['response']['numFound']==Users_IDs_count: 
         users.delete(q='*:*')
         test = users.commit()
-        Users_IDs_res=session.query(Users).all()
+        Users_IDs_res=db.session.query(Users).all()
         Users_IDs_JSON=[]
         for doc in Users_IDs_res:
             Users_IDs_JSON.append(json.loads(doc.value))
@@ -115,12 +130,12 @@ def reindex():
 
 
     lrcount=0
-    Taxonomies_IDs_count=session.query(Taxonomies).count()
+    Taxonomies_IDs_count=db.session.query(Taxonomies).count()
     rescount=taxonomies.search("*:*",rows=0)
     if rescount.raw_response['response']['numFound']==Taxonomies_IDs_count: 
         taxonomies.delete(q='*:*')
         test = taxonomies.commit()
-        Taxonomies_IDs_res=session.query(Taxonomies).all()
+        Taxonomies_IDs_res=db.session.query(Taxonomies).all()
         Taxonomies_IDs_JSON=[]
         for doc in Taxonomies_IDs_res:
             Taxonomies_IDs_JSON.append(json.loads(doc.value))
@@ -228,12 +243,12 @@ def normalize_result(result, template):
 
 def insert_new_resource(j):
     j['id']=str(uuid.uuid4())
-    session.add(Learningresources(id = j['id'], value=json.dumps(j)))
+    db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
     try:
-        session.commit()
+        db.session.commit()
     except Exception as err:
-        db_session.rollback()
-        db_session.flush()
+        db.session.rollback()
+        db.session.flush()
         return({"status":"fail","error":str(err)})
     try:
         resources.add([j])
@@ -246,7 +261,7 @@ def insert_new_resource(j):
     add_timestamp(j['id'],"submit",current_user)
 
 def update_resource(j):
-    session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
+    db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
     
     result1=resources.search("id:"+j['id'], rows=1)
     if j['status'] != result1.docs[0]["status"]:
@@ -260,10 +275,10 @@ def update_resource(j):
         
         resources.add([j])
         resources.commit()
-        session.commit()
+        db.session.commit()
     except Exception as err:
-        db_session.rollback()
-        db_session.flush()
+        db.session.rollback()
+        db.session.flush()
         return({"status":"fail","error":str(err)})
     add_timestamp(j['id'],"update",current_user)
     return({"status":"success","error":None})
@@ -648,8 +663,13 @@ def addfeedback(document):
                             feedback.add([insertobj])
                             feedback.commit()
                             newfeedback=Feedback(id=newuuid,value=json.dumps(insertobj))
-                            session.add(newfeedback)
-                            session.commit()
+                            db.session.add(newfeedback)
+                            try:
+                                db.session.commit()
+                            except Exception as err:
+                                db.session.rollback()
+                                db.session.flush()
+                                return({"status":"error","message":"Database commit failed"})
                             if content['resourceid']!="0" and 'rating' in content.keys():
                                 normalize_rating(content['resourceid'])
                             return{"status":"success","message":"feedback has been added"},200
@@ -930,14 +950,14 @@ def learning_resources(document):
         for newres in newresults:
             newarray.append(newres['id'])
 
-        sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
+        sqlresults=db.session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
         if document == "search.jsonld":
             return format_resource_jsonld_fromdb(results,sqlresults)
         if document == "search.json":
             if summary:
                 return format_resource_fromdb_summary(results)
             else:
-        return format_resource_fromdb(results,sqlresults)
+                return format_resource_fromdb(results,sqlresults)
 
     if request.method == 'POST':
         params = {
@@ -999,7 +1019,7 @@ def learning_resources(document):
             else:
                 returntype="json"
             if 'summary' in content.keys():
-            
+              
                 summary = content['summary']
             else:
                 summary = False
@@ -1030,7 +1050,7 @@ def learning_resources(document):
                 newarray.append(newres['id'])
 
 
-            sqlresults=session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
+            sqlresults=db.session.query(Learningresources).filter(Learningresources.id.in_(newarray)).all()   
             
             if returntype == "jsonld":
                 return format_resource_jsonld_fromdb(results,sqlresults)
@@ -1038,7 +1058,7 @@ def learning_resources(document):
                 if summary:
                     return format_resource_fromdb_summary(results)
                 else:
-            return format_resource_fromdb(results,sqlresults)
+                    return format_resource_fromdb(results,sqlresults)
 
         else:
             return 'json not found'
@@ -1163,9 +1183,10 @@ def add_timestamp(id,timestamp_type,current_user):
     timestamp_json['timestamp']=nowstr
     timestamp_json['userid']=userid
     timestamp_json['type']=timestamp_type
-        timestamps.add([timestamp_json])
-        timestamps.commit()
+    timestamps.add([timestamp_json])
+    timestamps.commit()
 
+#TODO MYSQL?????
 
 
 
@@ -1174,10 +1195,10 @@ def check_urls():
     resourcelist = resources.search("*:*", fl="id,url", rows=100000)
     for resource in resourcelist:
         try:
-        r = requests.head(resource["url"],allow_redirects=True)
-        if r.status_code == 200:
+            r = requests.head(resource["url"],allow_redirects=True)
+            if r.status_code == 200:
                 pass
-        else:
+            else:
                 print(resource["url"])
                 print(r.status_code)
         except:
@@ -1228,7 +1249,7 @@ def access(id):
     else:
         return("ID not found")
     return ''
-
+    
 @app.route("/api/vocabularies/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/vocabularies/<document>", methods=['GET'])
 def vocabularies(document):
@@ -1336,8 +1357,14 @@ def vocabularies(document):
                             newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values']}
                             taxonomies.add([newvocabjson])
                             taxonomies.commit()
-                            session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
-                            session.commit()
+                            db.session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
+                            try:
+                                db.session.commit()
+                            except Exception as err:
+                                print(err)
+                                db.session.rollback()
+                                db.session.flush()
+                                return({"status":"error","message":"Database commit failed"})
                             return{"status":"success","message":"json rec"},200
                     elif all(key in vocabjson for key in ("name","values")):
                         if vocabjson['name'] and vocabjson['values']:
@@ -1347,10 +1374,16 @@ def vocabularies(document):
                                 newvocabjson={'id':newuuid,'name':vocabjson['name'],'values':vocabjson['values']}
                                 taxonomies.add([newvocabjson])
                                 taxonomies.commit()
-
+                                
                                 newtax=Taxonomies(id=newuuid,value=json.dumps(newvocabjson))
-                                session.add(newtax)
-                                session.commit()
+                                db.session.add(newtax)
+                                try:
+                                    db.session.commit()
+                                except Exception as err:
+                                    print(err)
+                                    db.session.rollback()
+                                    db.session.flush()
+                                    return({"status":"error","message":"Database commit failed"})
                                 return{"status":"success","message":"Vocabulary has been added."},200
                             else:
                                 return{"status":"error","message":"Vocabulary with that title already exists."},400
@@ -1384,16 +1417,16 @@ def login():
     if request.method == 'GET':
         return render_template("login.html")
     if request.method == 'POST':
-    user_object = get_user(request.form['username'])
-    if user_object:
-        computed = user_object['hash']
-        passwd = request.form['password']
-        if drash.verify(passwd, computed):
-            login_user(
-                User(user_object['id'], user_object['groups'], user_object['name']))
-            return redirect(url_for('protected'))
+        user_object = get_user(request.form['username'])
+        if user_object:
+            computed = user_object['hash']
+            passwd = request.form['password']
+            if drash.verify(passwd, computed):
+                login_user(
+                    User(user_object['id'], user_object['groups'], user_object['name']))
+                return redirect(url_for('protected'))
 
-    return 'Bad login'
+        return 'Bad login'
 
 
 @app.route("/logout/")
@@ -1406,7 +1439,7 @@ def logout():
 @app.route('/protected')
 @login_required
 def protected():
-    return 'Logged in as: ' + current_user.name
+    return 'Logged in as: ' + current_user.name 
 
 
 @app.route("/")
@@ -1431,9 +1464,15 @@ def validate_timezone(tz):
 def new_token(uuid):
     token_string=randomString(40)
     newtoken=Tokens(token=token_string,date=datetime.now(),uuid=uuid) 
-    session.add(newtoken)
-    session.commit()
-    return token_string
+    db.session.add(newtoken)
+    try:
+        db.session.commit()
+        return token_string
+    except Exception as err:
+        db.session.rollback()
+        db.session.flush()
+        return({"status":"error","message":"Database commit failed"})
+    # return token_string
 
 def send_mail(message,subject,isfrom,isto):
     try:
@@ -1459,7 +1498,7 @@ def passwordreset():
         
         if request.args.get('token'):
             token = request.args.get('token')
-            tokentuple=session.query(Tokens.token).filter(Tokens.token == token).filter(Tokens.date>=yesterday).first()
+            tokentuple=db.session.query(Tokens.token).filter(Tokens.token == token).filter(Tokens.date>=yesterday).first()
             if tokentuple:
                 return render_template("password_reset.html",token=token,url=request.host_url+"passwordreset/")
             return {"status":"error","message":"token not found."}
@@ -1468,7 +1507,7 @@ def passwordreset():
     if request.method == 'POST':
         usercontent = request.get_json()
         if usercontent['token'] and usercontent['pass']:
-            tokentuple=session.query(Tokens.uuid).filter(Tokens.token == usercontent['token']).filter(Tokens.date>=yesterday).first()
+            tokentuple=db.session.query(Tokens.uuid).filter(Tokens.token == usercontent['token']).filter(Tokens.date>=yesterday).first()
             if tokentuple: #change the password and remove token then respond with gr86S
                 this_user=users.search("id:\""+tokentuple[0]+"\"", rows=1)
                 if len(this_user.docs)!=0:
@@ -1480,10 +1519,15 @@ def passwordreset():
                     users.add([userjson])
                     users.commit()
                     #remove token from mysql
-                    tokens_to_delete=session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
+                    tokens_to_delete=db.session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
                     for ttd in tokens_to_delete:
                         session.delete(ttd)
-                        session.commit()
+                        try:
+                            db.session.commit()
+                        except Exception as err:
+                            db.session.rollback()
+                            db.session.flush()
+                            return({"status":"error","message":"Database commit failed"})
                     return({"status":"success","message":"password updated"})
                 else:
                     return({"status":"error","message":"token not found or expired."})
@@ -1526,27 +1570,27 @@ def user(action):
             return{"status":"error","message":"You must be logged in to add users."},400
                 
     if request.method == 'POST':
-    returnjson={"status":"success"}
-    usercontent=None
-    if request.is_json:
-        usercontent = request.get_json()
+        returnjson={"status":"success"}
+        usercontent=None
+        if request.is_json:
+            usercontent = request.get_json()
         else:
             return({"status":"error","message":"no JSON found in post"})
-    if usercontent:
+        if usercontent:
             if action=="search":
                 if current_user.is_authenticated: #TODO ADMIN
                     if "admin" in current_user.groups:
-                    if "search" in usercontent:
-                        userjson=[]
-                        these_users=users.search("name:"+usercontent['search']+"* OR email:"+usercontent['search']+"*", rows=100000)
-                        for user in these_users:
-                            user.pop('_version_', None)
-                            user.pop('hash', None)
-                            userjson.append(user)
-                        sortedusers=sorted(userjson, key=lambda k: k['name'].lower()) 
-                        returnvalue={"status":"success","users":sortedusers}
-                        return returnvalue
-                    return{"status":"error","message":"search not found in json"},400
+                        if "search" in usercontent:
+                            userjson=[]
+                            these_users=users.search("name:"+usercontent['search']+"* OR email:"+usercontent['search']+"*", rows=100000)
+                            for user in these_users:
+                                user.pop('_version_', None)
+                                user.pop('hash', None)
+                                userjson.append(user)
+                            sortedusers=sorted(userjson, key=lambda k: k['name'].lower()) 
+                            returnvalue={"status":"success","users":sortedusers}
+                            return returnvalue
+                        return{"status":"error","message":"search not found in json"},400
                     return{"status":"error","message":"You must be admin to search for users"},400
                 return{"status":"error","message":"You must be authenticated to search for users"},400
             if action=="create":
@@ -1587,8 +1631,13 @@ def user(action):
                                 isfrom='noreply@'+request.host_url
                                 if send_mail(emailbody,subject,isfrom,email):
                                     newuser=Users(id=newuuid,value=json.dumps(userjson)) 
-                                    session.add(newuser)
-                                    session.commit()
+                                    db.session.add(newuser)
+                                    try:
+                                        db.session.commit()
+                                    except Exception as err:
+                                        db.session.rollback()
+                                        db.session.flush()
+                                        return({"status":"error","message":"Database commit failed"})
                                     return {"status":"success","message":"User account created."},200
                                 else:
                                     return{"status":"error","message":"Could not send email to "+usercontent['email']+"."},400
@@ -1602,48 +1651,48 @@ def user(action):
                 else:
                     return{"status":"error","message":"To create a user both name and email keys need to be in json provided."},400
 
-        if action=="add":
+            if action=="add":
                 if current_user.is_authenticated:
                     if "admin" in current_user.groups:
-            if all (key in usercontent for key in ("name","email")):
-                if len(usercontent['name'])>0 and len(usercontent['email'])>0:
+                        if all (key in usercontent for key in ("name","email")):
+                            if len(usercontent['name'])>0 and len(usercontent['email'])>0:
 
-                    results = users.search("name:\""+usercontent['name']+"\"", rows=1)
-                    if len(results.docs)==0:
-                        emailresults = users.search("email:\""+usercontent['email']+"\"", rows=1)
-                        if len(emailresults.docs)==0:
-                            hashpw=None
-                            groups=None
-                            enabled=True
+                                results = users.search("name:\""+usercontent['name']+"\"", rows=1)
+                                if len(results.docs)==0:
+                                    emailresults = users.search("email:\""+usercontent['email']+"\"", rows=1)
+                                    if len(emailresults.docs)==0:
+                                        hashpw=None
+                                        groups=None
+                                        enabled=True
                                         if usercontent['timezone']:
                                             timezone=usercontent['timezone']
                                         else:
                                             timezone=""
-                            if "password" in usercontent:
-                                hashpw=drash.encode(usercontent["password"])
-                            else:
-                                hashpw=drash.encode(randomString(20))
-                            if "groups" in usercontent:
-                                if validate_groups(usercontent["groups"]):
-                                    groups=usercontent["groups"]
-                                else:
+                                        if "password" in usercontent:
+                                            hashpw=drash.encode(usercontent["password"])
+                                        else:
+                                            hashpw=drash.encode(randomString(20))
+                                        if "groups" in usercontent:
+                                            if validate_groups(usercontent["groups"]):
+                                                groups=usercontent["groups"]
+                                            else:
                                                 groups=["submitter","lauth"]
-                            else:
-                                groups=["submitter"]
-                            if "enabled" in usercontent:
-                                enabled=usercontent["enabled"]
-                            email=usercontent['email']
-                            name=usercontent['name']
+                                        else:
+                                            groups=["submitter"]
+                                        if "enabled" in usercontent:
+                                            enabled=usercontent["enabled"]
+                                        email=usercontent['email']
+                                        name=usercontent['name']
                                         newuuid=str(uuid.uuid4())
-                            userjson={
-                                    "hash":hashpw,
-                                    "name":name,
-                                    "email":email,
-                                    "timezone":timezone,
-                                    "groups":groups,
-                                    "enabled":enabled,
+                                        userjson={
+                                                "hash":hashpw,
+                                                "name":name,
+                                                "email":email,
+                                                "timezone":timezone,
+                                                "groups":groups,
+                                                "enabled":enabled,
                                                 "id":newuuid
-                                    }
+                                                }
                                         users.add([userjson])
                                         users.commit()
 
@@ -1656,8 +1705,13 @@ def user(action):
                                         isfrom='noreply@'+request.host_url
                                         if send_mail(emailbody,subject,isfrom,email):
                                             newuser=Users(id=newuuid,value=json.dumps(userjson)) 
-                                            session.add(newuser)
-                                            session.commit()
+                                            db.session.add(newuser)
+                                            try:
+                                                db.session.commit()
+                                            except Exception as err:
+                                                db.session.rollback()
+                                                db.session.flush()
+                                                return({"status":"error","message":"Database commit failed"})
                                             return {"status":"success","message":"User account created."},200
                                         else:
                                             return{"status":"error","message":"Could not send email to "+usercontent['email']+"."},400
@@ -1697,22 +1751,22 @@ def user(action):
                                 users.commit()
                                 Users(id=usercontent['id'],value=json.dumps(accountinfo)) 
                                 return{"status":"success","message":"Account info for "+usercontent['name']+" has been updated"},200
+                              
 
-
-                        else:
+                            else:
                                 return{"status":"error","message":"UUID for user not found."},400
-                    else:
+                        else:
                             return{"status":"error","message":"No account ID in json post"},400   
-                else:
+                    else:
                         return{"status":"error","message":"Only admins can add users."},400
-            else:
+                else:
                     return{"status":"error","message":"You must be logged in to add users."},400
             if action=="pwreset":
                 if 'email' in usercontent:
                     if usercontent['email']:
                         emailresults = users.search("email:\""+usercontent['email']+"\"", rows=1)
                     
-
+                        
                         if len(emailresults.docs)!=0:
                             if len(usercontent['email'])>0:
                                 token=new_token(emailresults.docs[0]['id'])
@@ -1801,8 +1855,13 @@ def orcid_callback():
                 userid=eaobj.docs[0]["id"]
                 if 'oauth' not in eaobj.docs[0]["groups"]: #If oauth is not in groups add it and update records.
                     eaobj.docs[0]["groups"].append('oauth')
-                    session.query(Users).filter(Users.id == userid).update({Users.value:json.dumps(eaobj.docs[0])}, synchronize_session = False) #update the record.
-                    session.commit()
+                    db.session.query(Users).filter(Users.id == userid).update({Users.value:json.dumps(eaobj.docs[0])}, synchronize_session = False) #update the record.
+                    try:
+                        db.session.commit()
+                    except Exception as err:
+                        db.session.rollback()
+                        db.session.flush()
+                        return({"status":"error","message":"Database commit failed"})
                     doc=strip_version(eaobj.docs[0])
                    
                     users.add([doc])
@@ -1823,7 +1882,7 @@ def orcid_callback():
     userobj = users.search("name:\""+users_username+"\"", rows=1)
     newuuid=str(uuid.uuid4())
     #if email not found, create it and log in the user.
-    if len(userobj.docs)==0:
+    if len(userobj.docs)==0:           
         hashpw=drash.encode(randomString())
         userjson={
         "hash":hashpw,
@@ -1837,8 +1896,13 @@ def orcid_callback():
         test = users.commit()
         newuser=Users(id=newuuid,value=json.dumps(userjson)) 
         
-        session.add(newuser)
-        session.commit()
+        db.session.add(newuser)
+        try:
+            db.session.commit()
+        except Exception as err:
+            db.session.rollback()
+            db.session.flush()
+            return({"status":"error","message":"Database commit failed"})
         login_user(User(newuuid, ["submitter","oauth"], users_username))
         return redirect(url_for('protected'))
     #Otherwise just log in the user.
