@@ -1537,6 +1537,17 @@ def passwordreset():
 
         return":)"
 
+
+
+@app.route("/user/groups", methods=['GET'])
+def user_groups():
+    if current_user.is_authenticated:
+        jsonobj={'groups':current_user.groups}
+    else:
+        jsonobj={'groups':[]}
+    return json.dumps(jsonobj)
+
+
 @app.route("/user/<action>", methods=['GET','POST'])
 def user(action):
     if request.method == 'GET':
