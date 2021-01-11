@@ -20,6 +20,7 @@ from email.message import EmailMessage
 from flask_oauthlib.provider import OAuth2Provider
 from oauthlib.oauth2 import WebApplicationClient, BackendApplicationClient
 from requests_oauthlib import OAuth2Session
+from feedgen.feed import FeedGenerator
 
 # Create flask app
 app = Flask(__name__)
@@ -683,6 +684,32 @@ def addfeedback(document):
             else:
                 return{"status":"error","message":"No json found"},400
 
+
+
+# Resource RRS Feed
+
+@app.route('/rss')
+def rss():
+    fg = FeedGenerator()
+    fg.title('Feed title')
+    fg.description('Feed description')
+    fg.link(href=request.host_url)
+
+    results=resources.search("status:True",rows=10)
+    for resource in results.docs: 
+        print(resource['title'])
+        fe = fg.add_entry()
+        fe.title(resource['title'])
+        fe.link(href=resource['url'])
+        fe.description(resource['abstract_data'])
+        fe.guid(resource['id'], permalink=False) # Or: UUID?
+        fe.author(name=resource['submitter_name'], email=resource['submitter_email'])
+        fe.pubDate(resource['created'])
+
+    response = make_response(fg.rss_str(pretty=True))
+    response.headers.set('Content-Type', 'application/rss+xml')
+
+    return response
 
 # Resource interaction
 @app.route("/api/resource/", defaults={'document': None}, methods=['POST'])
