@@ -59,8 +59,8 @@ class Tokens(db.Model):
 
 
 
-resources_facets = ["facet_author_org", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
-                    "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type"]
+resources_facets = ["facet_author_org.name", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
+                    "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks.name","facet_author_names", "facet_ed_frameworks.nodes.name", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type","facet_access_cost"]
 # Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(
     app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
@@ -905,6 +905,7 @@ def learning_resources(document):
             searchstring, request, "submitter_name")
         searchstring = append_searchstring(
             searchstring, request, "submitter_email")
+        searchstring = append_searchstring(searchstring, request, "author_names")
         searchstring = append_searchstring(searchstring, request, "authors.givenName")
         searchstring = append_searchstring(searchstring, request, "authors.familyName")
         searchstring = append_searchstring(searchstring, request, "authors.name_identifier")
