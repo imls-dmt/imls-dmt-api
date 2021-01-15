@@ -694,16 +694,20 @@ def rss():
     fg.title('Feed title')
     fg.description('Feed description')
     fg.link(href=request.host_url)
-
-    results=resources.search("status:True",rows=10)
+    results=resources.search("status:True",sort="created desc",rows=10)
     for resource in results.docs: 
-        print(resource['title'])
         fe = fg.add_entry()
         fe.title(resource['title'])
         fe.link(href=resource['url'])
         fe.description(resource['abstract_data'])
         fe.guid(resource['id'], permalink=False) # Or: UUID?
-        fe.author(name=resource['submitter_name'], email=resource['submitter_email'])
+        if 'submitter_name' in resource:
+            thisname=resource['submitter_name']
+            thisemail=resource['submitter_email']
+        else:
+            thisemail='Unknown'
+            thisname='Unknown'
+        fe.author(name=thisname, email=thisemail)
         fe.pubDate(resource['created'])
 
     response = make_response(fg.rss_str(pretty=True))
