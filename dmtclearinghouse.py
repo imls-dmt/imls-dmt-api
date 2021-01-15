@@ -243,6 +243,7 @@ def normalize_result(result, template):
     return template
 
 def insert_new_resource(j):
+    #TODO update all facets
     j['id']=str(uuid.uuid4())
     db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
     try:
@@ -254,34 +255,35 @@ def insert_new_resource(j):
     try:
         resources.add([j])
         test = resources.commit()
+        add_timestamp(j['id'],"submit",current_user)
     except Exception as solrerr:
         db_session.rollback()
         db_session.flush()
         return({"status":"fail","error":str(solrerr)})
     return({"status":"success","error":None})
-    add_timestamp(j['id'],"submit",current_user)
 
 def update_resource(j):
     db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
-    
+    #TODO update all facets.
     result1=resources.search("id:"+j['id'], rows=1)
+    status="update"
     if j['status'] != result1.docs[0]["status"]:
         if j['status']==1:
-            add_timestamp(j['id'],"publish",current_user)
+            status="publish"
         else:
             j['status']=0 #set to 0 in case of funny business.
-            add_timestamp(j['id'],"un-publish",current_user)
+            status="un-publish"
 
     try:
         
         resources.add([j])
         resources.commit()
         db.session.commit()
+        add_timestamp(j['id'],status,current_user)
     except Exception as err:
         db.session.rollback()
         db.session.flush()
         return({"status":"fail","error":str(err)})
-    add_timestamp(j['id'],"update",current_user)
     return({"status":"success","error":None})
 
 def get_score(results,uuid):
