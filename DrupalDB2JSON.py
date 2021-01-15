@@ -42,6 +42,8 @@ else:
 print("Deleting and creating indexes")
 os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c learningresources"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c learningresources -n data_driven_schema_configs"')
+
+
 os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c users"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c users -n data_driven_schema_configs"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c taxonomies"')
@@ -50,6 +52,7 @@ os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c timestamps"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c timestamps -n data_driven_schema_configs"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c feedback"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c feedback -n data_driven_schema_configs"')
+r=requests.get("http://localhost:8983/solr/users/update?commit=true")
 
 print("Add Learning Resources fields")
 fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":false, "required":true, "stored":true ,"indexed":true,"default":""}}',
@@ -503,10 +506,16 @@ DMTEducationalFrameworkNodes_Test=get_controlled_vocabulary(48)
 insert_taxonomies(DMTEducationalFrameworkNodes_Test,"Educational Framework Nodes Test")
 #print(DMTAccessibilityFeatures)
 
+
+
+NewSession.execute('''TRUNCATE TABLE learningresources''')
+NewSession.commit()
+
 #Migrate learning resources from SQL to SOLR
 print("Migrating all learning resources...")
 Learning_Resources=session.query(Nodes.title,Nodes.status,Nodes.nid,Nodes.uid,Nodes.created).filter(Nodes.type=='dmt_learning_resource').all()
 jsondict=json.loads('{ "learning_resources":[]}')
+
 for lr in Learning_Resources:
     j=json.loads('{}')
     j['title']=lr.title
@@ -566,7 +575,8 @@ for lr in Learning_Resources:
     j['md_record_id']=""
     j['ratings']=[]
     j['rating']=0
-    j['id']=str(uuid.uuid4())
+    nidstring=str(lr.nid)
+    j['id']=str(uuid.uuid3(uuid.NAMESPACE_OID, nidstring))
     
     contributors=[]
     for contributorid in get_values(ContributorPeople.field_lr_contributor_people_value,ContributorPeople):
