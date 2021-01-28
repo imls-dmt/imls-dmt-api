@@ -255,7 +255,7 @@ def insert_new_resource(j):
     try:
         resources.add([j])
         test = resources.commit()
-        add_timestamp(j['id'],"submit",current_user)
+        add_timestamp(j['id'],"submit",current_user,request)
     except Exception as solrerr:
         db_session.rollback()
         db_session.flush()
@@ -279,7 +279,7 @@ def update_resource(j):
         resources.add([j])
         resources.commit()
         db.session.commit()
-        add_timestamp(j['id'],status,current_user)
+        add_timestamp(j['id'],status,current_user,request)
     except Exception as err:
         db.session.rollback()
         db.session.flush()
@@ -631,6 +631,7 @@ def addfeedback(document):
     if request.method == 'POST':
         if document=="add":
             insertobj={}
+            insertobj['ip']=request.remote_addr
             now = datetime.now()
             insertobj['timestamp']=now.strftime("%Y-%m-%dT%H:%M:%SZ")
             rating=None
@@ -1203,7 +1204,7 @@ def schema(collection, returntype):
     return(schemajson)
 
 
-def add_timestamp(id,timestamp_type,current_user):
+def add_timestamp(id,timestamp_type,current_user,request):
 
 
     if current_user.is_authenticated:
@@ -1217,6 +1218,7 @@ def add_timestamp(id,timestamp_type,current_user):
     timestamp_json['timestamp']=nowstr
     timestamp_json['userid']=userid
     timestamp_json['type']=timestamp_type
+    timestamp_json['ip']=request.remote_addr
     timestamps.add([timestamp_json])
     timestamps.commit()
 
@@ -1277,7 +1279,7 @@ def access(id):
     idresults = resources.search("id:"+id)
     #If the id exists as a resource...
     if len(idresults.docs)>0:
-        add_timestamp(id,"access",current_user)
+        add_timestamp(id,"access",current_user,request)
         return redirect(idresults.docs[0]["url"], code=302)
     # else return id not found.. 
     else:
