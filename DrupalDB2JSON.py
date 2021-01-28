@@ -130,6 +130,7 @@ facet_fields=[
  '{"add-field": {"name":"facet_access_cost", "type":"boolean", "multiValued":false, "stored":true,"required":false ,"indexed":true}}']
 
 timestamp_fields=[
+ '{"add-field": {"name":"ip", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"type", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"timestamp", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"userid", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -137,6 +138,7 @@ timestamp_fields=[
  ]
 
 feedback_fields=[
+ '{"add-field": {"name":"ip", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"feedback", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"rating", "type":"pfloat", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"timestamp", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
