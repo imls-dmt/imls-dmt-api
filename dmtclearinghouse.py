@@ -357,7 +357,9 @@ def format_resource_fromdb(results,sqlresults):
                 if k.startswith('facet_'):
                     returnjsonresult.pop(k)
             if returnjsonresult["id"]==solrres['id']:
-                returnjsonresult['score']=get_score(results,returnjsonresult['id'])
+                returnjsonresult['score']=get_score(results,returnjsonresult['id']) 
+                returnjsonresult['rating']=solrres['rating']
+                returnjsonresult['ratings']=get_ratings(solrres['id'])
                 returnval['results'].append(returnjsonresult)
 
     if "facet_fields" in results.facets.keys():
