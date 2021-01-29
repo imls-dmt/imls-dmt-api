@@ -698,19 +698,30 @@ def rss():
     fg.description('Feed description')
     fg.link(href=request.host_url)
     results=resources.search("status:True",sort="created desc",rows=10)
+    retstr=''
     for resource in results.docs: 
+
         fe = fg.add_entry()
         fe.title(resource['title'])
         fe.link(href=resource['url'])
         fe.description(resource['abstract_data'])
-        fe.guid(resource['id'], permalink=False) # Or: UUID?
-        if 'submitter_name' in resource:
-            thisname=resource['submitter_name']
-            thisemail=resource['submitter_email']
+        fe.guid(resource['id'], permalink=False)
+        thisemail=app.config["RSS_EMAIL"]
+
+
+        if 'author_names' in resource:
+            if  len(resource['author_names'])>0:
+                thisname=",".join(resource['author_names'])
+            elif 'author_org.name' in resource:
+                thisname=resource['author_org.name']
+        elif 'author_org.name' in resource:
+            thisname=resource['author_org.name']
         else:
-            thisemail='Unknown'
             thisname='Unknown'
+        retstr=retstr+":"+thisname
         fe.author(name=thisname, email=thisemail)
+
+        
         fe.pubDate(resource['created'])
 
     response = make_response(fg.rss_str(pretty=True))
