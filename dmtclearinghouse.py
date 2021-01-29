@@ -560,6 +560,15 @@ def unit_tests():
     return tests
 
 
+def get_ratings(id):
+    resourceresult = resources.search("id:"+id, rows=1)
+    thisresource=resourceresult.docs[0]
+    feedbackresults=feedback.search("resourceid:"+id, rows=100000000)
+    ratings=[]
+    for result in feedbackresults:
+        if 'rating' in result.keys():
+            ratings.append(result["rating"])
+    return ratings
 
 def normalize_rating(id):
     resourceresult = resources.search("id:"+id, rows=1)
