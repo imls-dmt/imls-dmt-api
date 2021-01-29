@@ -22,6 +22,10 @@ from oauthlib.oauth2 import WebApplicationClient, BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from feedgen.feed import FeedGenerator
 
+
+
+
+
 # Create flask app
 app = Flask(__name__)
 
@@ -1503,20 +1507,9 @@ def protected():
 
 @app.route("/")
 def hello():
-    return render_template("index.html")
     return "DMT Clearinghouse."
 
-@app.route('/js/<path:path>')
-def send_js(path):
-    return send_from_directory('js', path)
 
-@app.route('/css/<path:path>')
-def send_js(path):
-    return send_from_directory('css', path)
-
-@app.route('/img/<path:path>')
-def send_js(path):
-    return send_from_directory('img', path)
 
 def validate_groups(grouparray):
     valid=True
