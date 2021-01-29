@@ -694,9 +694,10 @@ def addfeedback(document):
 @app.route('/rss')
 def rss():
     fg = FeedGenerator()
-    fg.title('Feed title')
-    fg.description('Feed description')
-    fg.link(href=request.host_url)
+    fg.title('DMT Clearinghouse')
+    fg.description('A registry for online learning resources focusing on research data management.')
+    fg.id(request.base_url)
+    fg.link( href=request.base_url, rel='self' )
     results=resources.search("status:True",sort="created desc",rows=10)
     retstr=''
     for resource in results.docs: 
