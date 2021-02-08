@@ -336,16 +336,35 @@ def format_resource_fromdb_summary(results):
         ids.append(solrres['id'])
     returnval['results']=ids
     if "facet_fields" in results.facets.keys():
-        for rf in resources_facets:
-            rfobject = {}
-            if rf in results.facets['facet_fields'].keys():
-                for value, number in zip(results.facets['facet_fields'][rf][0::2], results.facets['facet_fields'][rf][1::2]):
-                    if number > 0:
-                        rfobject[value] = number
-            returnval['facets'][rf.replace('facet_', '')] = rfobject
+        returnval['facets']=fixFacets(results)
+
     returnval['hits-total'] = results.hits
     returnval['hits-returned'] = len(results)
     return returnval
+
+
+def fixFacets(results):
+    facets=results.facets['facet_fields']
+    rfobject= {}
+    for facet in facets:
+        rfobject[facet.replace('facet_', '')]=facets[facet]
+    
+    for facet in rfobject:
+        data_list=[]
+        index=0
+        isKey=True
+        for data in rfobject[facet]:
+            if isKey:
+      
+                keyname=data
+                isKey=False
+            else:
+                if len(keyname.strip())>0:
+                    data_list.append({keyname:data})
+                isKey=True
+        rfobject[facet]=data_list
+    return rfobject
+
 
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
@@ -367,13 +386,7 @@ def format_resource_fromdb(results,sqlresults):
                 returnval['results'].append(returnjsonresult)
 
     if "facet_fields" in results.facets.keys():
-        for rf in resources_facets:
-            rfobject = {}
-            if rf in results.facets['facet_fields'].keys():
-                for value, number in zip(results.facets['facet_fields'][rf][0::2], results.facets['facet_fields'][rf][1::2]):
-                    if number > 0:
-                        rfobject[value] = number
-            returnval['facets'][rf.replace('facet_', '')] = rfobject
+        returnval['facets']=fixFacets(results)
     returnval['hits-total'] = results.hits
     returnval['hits-returned'] = len(results)
     return returnval
@@ -1105,8 +1118,16 @@ def learning_resources(document):
             if 'example' in content.keys():
                 if content['example']==True:
                     return {"searchstring":searchstringexample}
+
+            if 'facet_limit' in content.keys():
+                params['facet.limit']=content['facet_limit']
+
+            if 'facet_sort' in content.keys():
+                params['facet.sort']=content['facet_sort']
             results = resources.search(searchstring, **params, fl="*,score" ,sort=sort,rows=rows, start=start)
+            
             newresults = resources.search(searchstring, **params, fl="id",sort=sort,rows=rows, start=start)
+            
             newarray=[]
             for newres in newresults:
                 newarray.append(newres['id'])
