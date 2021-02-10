@@ -28,7 +28,7 @@ from feedgen.feed import FeedGenerator
 
 # Create flask app
 app = Flask(__name__)
-
+app.config['JSON_SORT_KEYS'] = False
 def randomString(stringLength=8):
     letters = string.hexdigits
     return ''.join(random.choice(letters) for i in range(stringLength))
@@ -330,13 +330,15 @@ def format_resource_jsonld_fromdb(results,sqlresults):
 
 def format_resource_fromdb_summary(results):
     returnval = json.loads('{ "documentation":"'+request.host_url +
-                           'api/resources/documentation.html","results":[], "facets":{}}')
+                           'api/resources/documentation.html", "facets":{}}')
+    if "facet_fields" in results.facets.keys():
+        returnval['facets']=fixFacets(results)
+    returnval['results']=[]
     ids=[]
     for solrres in results:
         ids.append(solrres['id'])
     returnval['results']=ids
-    if "facet_fields" in results.facets.keys():
-        returnval['facets']=fixFacets(results)
+
 
     returnval['hits-total'] = results.hits
     returnval['hits-returned'] = len(results)
@@ -348,9 +350,8 @@ def fixFacets(results):
     rfobject= {}
     for facet in facets:
         rfobject[facet.replace('facet_', '')]=facets[facet]
-    
     for facet in rfobject:
-        data_list=[]
+        data_list={}
         index=0
         isKey=True
         for data in rfobject[facet]:
@@ -360,7 +361,7 @@ def fixFacets(results):
                 isKey=False
             else:
                 if len(keyname.strip())>0:
-                    data_list.append({keyname:data})
+                    data_list[keyname]=data
                 isKey=True
         rfobject[facet]=data_list
     return rfobject
@@ -369,13 +370,14 @@ def fixFacets(results):
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
-                           'api/resources/documentation.html","results":[], "facets":{}}')
+                           'api/resources/documentation.html", "facets":{}}')
+    if "facet_fields" in results.facets.keys():
+        returnval['facets']=fixFacets(results)
+    returnval['results']=[]
     for solrres in results:
-
         for result in sqlresults:
             returnjsonresult=json.loads(result.value)
             list_keys = list(returnjsonresult.keys())
-
             for k in list_keys:
                 if k.startswith('facet_'):
                     returnjsonresult.pop(k)
@@ -385,8 +387,6 @@ def format_resource_fromdb(results,sqlresults):
                 returnjsonresult['ratings']=get_ratings(solrres['id'])
                 returnval['results'].append(returnjsonresult)
 
-    if "facet_fields" in results.facets.keys():
-        returnval['facets']=fixFacets(results)
     returnval['hits-total'] = results.hits
     returnval['hits-returned'] = len(results)
     return returnval
