@@ -52,6 +52,14 @@ os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c timestamps"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c timestamps -n data_driven_schema_configs"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c feedback"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c feedback -n data_driven_schema_configs"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c questions"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr create -c questions -n data_driven_schema_configs"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c question_groups"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr create -c question_groups -n data_driven_schema_configs"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c surveys"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr create -c surveys -n data_driven_schema_configs"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c answers"')
+os.system('sudo su - solr -c "/opt/solr/bin/solr create -c answers -n data_driven_schema_configs"')
 r=requests.get("http://localhost:8983/solr/users/update?commit=true")
 
 print("Add Learning Resources fields")
@@ -94,6 +102,7 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"contributors.familyName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"contributors.type", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"status", "type":"boolean", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"pub_status", "type":"string", "multiValued":false, "required":true, "stored":true ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"abstract_data", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"abstract_format", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"locator_data", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -145,6 +154,70 @@ feedback_fields=[
  '{"add-field": {"name":"email", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"resourceid", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}'
  ]
+
+question_fields=[
+ '{"add-field": {"name":"label", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"name", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"element", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"options", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"input_type", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}']
+
+question_group_fields=[
+ '{"add-field": {"name":"label", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"question_ids", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}']
+
+surveys_fields=[
+ '{"add-field": {"name":"label", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"question_group_ids", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"resourceid", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}']
+
+answers_fields=[
+ '{"add-field": {"name":"surveys_id", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"question_id", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"answer", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"respondent_id", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}'
+ ]
+
+
+for field in answers_fields:
+    j=json.loads(field)
+    # print(j)
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    url="http://localhost:8983/solr/answers/schema"
+    r = requests.post(url, data=json.dumps(j), headers=headers)
+    if r.status_code!=200:
+        print(r.json())
+        print(r.text)
+
+for field in surveys_fields:
+    j=json.loads(field)
+    # print(j)
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    url="http://localhost:8983/solr/surveys/schema"
+    r = requests.post(url, data=json.dumps(j), headers=headers)
+    if r.status_code!=200:
+        print(r.json())
+        print(r.text)
+
+for field in question_group_fields:
+    j=json.loads(field)
+    # print(j)
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    url="http://localhost:8983/solr/question_groups/schema"
+    r = requests.post(url, data=json.dumps(j), headers=headers)
+    if r.status_code!=200:
+        print(r.json())
+        print(r.text)
+
+for field in question_fields:
+    j=json.loads(field)
+    # print(j)
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    url="http://localhost:8983/solr/questions/schema"
+    r = requests.post(url, data=json.dumps(j), headers=headers)
+    if r.status_code!=200:
+        print(r.json())
+        print(r.text)
 
 for field in feedback_fields:
     j=json.loads(field)
@@ -522,6 +595,11 @@ for lr in Learning_Resources:
     j=json.loads('{}')
     j['title']=lr.title
     j['status']=lr.status
+    if lr.status==0:
+        j['pub_status']='in-process'
+    elif lr.status==1:
+        j['pub_status']='published'
+
     j['url']=get_value(LRUrls.field_lr_url_url,LRUrls)
     j['access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
     j['facet_access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
