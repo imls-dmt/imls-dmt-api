@@ -1018,7 +1018,12 @@ def learning_resources(document):
             else:
                 start = 0
         else:
-            start = 0        
+            start = 0
+        if request.args.get("facet_limit"):
+            params['facet.limit']=request.args.get("facet_limit") 
+        if request.args.get("facet_sort"):
+            params['facet.sort']=request.args.get("facet_sort") 
+
         results = resources.search(searchstring, **params, fl="*,score" ,rows=rows, start=start)
         newresults = resources.search(searchstring, fl="id",rows=rows, start=start)
         newarray=[]
