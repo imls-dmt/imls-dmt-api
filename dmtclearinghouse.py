@@ -1174,6 +1174,25 @@ def learning_resources(document):
         operators = ['AND', 'NOT', 'OR']
         # searchstring = "status:true"
         searchstring = "*:*"
+        if request.args.get('my_content'):
+            current_user.id
+
+        if current_user.is_authenticated:
+            if "admin" in current_user.groups:
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "editor" in current_user.groups:
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "reviewer" in current_user.groups:
+                searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published  OR pub_status:in-review)"
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "md-entry" in current_user.groups:
+                searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published)"
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "submitter" in current_user.groups:
+                searchstring = searchstring+" AND pub_status:published"
+                
+        else:
+            searchstring = searchstring+" AND pub_status:published"
         if request.is_json:
             content = request.get_json()
             if len(content['search']) > 0:
