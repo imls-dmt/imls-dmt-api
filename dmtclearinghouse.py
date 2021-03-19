@@ -1810,6 +1810,14 @@ def user(action):
 
                     sorteduserjson = sorted(userjson, key=lambda k: k['name'].lower())     
                     return render_template("edit.html", userjson=sorteduserjson,groups=groups)
+                if action=="users.json":
+
+                    sorteduserjson = sorted(userjson, key=lambda k: k['name'].lower())
+                    return_json={"users":sorteduserjson}
+                    r = make_response( return_json )
+                    r.mimetype = 'application/json'
+                    return r     
+
  
             else:
                 return{"status":"error","message":"Only admins can add users."},400
