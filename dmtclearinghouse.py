@@ -247,8 +247,11 @@ def normalize_result(result, template):
     return template
 
 def insert_new_resource(j):
-    #TODO update all facets
+
+    j['creator']=current_user.name
+    j=UpdateFacets(j)
     j['id']=str(uuid.uuid4())
+    j['pub_status']="in-process"
     db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
     try:
         db.session.commit()
