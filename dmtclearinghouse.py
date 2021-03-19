@@ -1043,6 +1043,28 @@ def learning_resources(document):
             return generate_documentation(learning_resources.__doc__, document, request, True)
 
         searchstring = "*:*"
+        
+        if current_user.is_authenticated:
+            if "admin" in current_user.groups:
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "editor" in current_user.groups:
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "reviewer" in current_user.groups:
+                searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published  OR pub_status:in-review)"
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+            elif "md-entry" in current_user.groups:
+                searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published)"
+                searchstring = append_searchstring(searchstring, request, "pub_status")
+
+            if request.args.get("my_resources"):
+
+                searchstring=searchstring+" AND creator:"+current_user.name
+                
+                print(current_user.__dict__)
+        else:
+            searchstring = searchstring+" AND pub_status:published"
+
+
         searchstring = append_searchstring(searchstring, request, "status")
         searchstring = append_searchstring(searchstring, request, "title")
         searchstring = append_searchstring(searchstring, request, "url")
