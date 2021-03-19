@@ -277,27 +277,45 @@ def UpdateFacets(j):
     return j
 
 def update_resource(j):
-    db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
-    #TODO update all facets.
-    result1=resources.search("id:"+j['id'], rows=1)
-    status="update"
-    if j['status'] != result1.docs[0]["status"]:
-        if j['status']==1:
-            status="publish"
-        else:
-            j['status']=0 #set to 0 in case of funny business.
-            status="un-publish"
+    results = resources.search("id:"+j["id"], rows=1)
+    doc={}
+    if len(results.docs) > 0:
+        doc=results.docs[0]
+    else:
+        return{"status":"error","message":"Invalid ID"},400
+    current_status=doc['pub_status']
+    status=j['pub_status']
+    if status not in ['in-process','published','in-review','delete-request','pre-pub-review','deleted']:
+        return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'delete-request'"},400
 
-    try:
-        
-        resources.add([j])
-        resources.commit()
-        db.session.commit()
-        add_timestamp(j['id'],status,current_user,request)
-    except Exception as err:
-        db.session.rollback()
-        db.session.flush()
-        return({"status":"fail","error":str(err)})
+    can_edit=False
+    if "admin" in current_user.groups:
+        can_edit=True
+    elif "editor" in current_user.groups:
+        can_edit=True
+    elif "reviewer" in current_user.groups:
+        if status in ['pre-pub-review','delete-request','in-process'] and current_status not in ['published']:
+            can_edit=True
+    elif "md-entry" in current_user.groups :
+        if status =='in-review' and current_status =='in-process':
+            can_edit=True
+    if can_edit:
+        db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
+
+        j=UpdateFacets(j)
+        result1=resources.search("id:"+j['id'], rows=1)
+        timestamp_status="update"
+        try:
+            resources.add([j])
+            resources.commit()
+            db.session.commit()
+            add_timestamp(j['id'],timestamp_status,current_user,request)
+        except Exception as err:
+            db.session.rollback()
+            db.session.flush()
+            return({"status":"fail","error":str(err)})
+    else:
+        return{"status":"error","message":"You do not have permisson to set pub_status to "+status},400
     return({"status":"success","error":None})
 
 def get_score(results,uuid):
