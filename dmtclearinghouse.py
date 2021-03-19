@@ -358,18 +358,17 @@ def format_resource_jsonld_fromdb(results,sqlresults):
 
 def format_resource_fromdb_summary(results):
     returnval = json.loads('{ "documentation":"'+request.host_url +
-                           'api/resources/documentation.html", "facets":{}}')
+                           'api/resources/documentation.html"}')
+    returnval['hits-total'] = results.hits
+    returnval['hits-returned'] = len(results)
+    returnval["facets"]={}
     if "facet_fields" in results.facets.keys():
         returnval['facets']=fixFacets(results)
     returnval['results']=[]
     ids=[]
     for solrres in results:
-        ids.append(solrres['id'])
+        ids.append({'title':solrres['title'],'id':solrres['id']})
     returnval['results']=ids
-
-
-    returnval['hits-total'] = results.hits
-    returnval['hits-returned'] = len(results)
     return returnval
 
 
@@ -398,7 +397,10 @@ def fixFacets(results):
 def format_resource_fromdb(results,sqlresults):
     lrtemplate=temlate_doc('learningresources')
     returnval = json.loads('{ "documentation":"'+request.host_url +
-                           'api/resources/documentation.html", "facets":{}}')
+                           'api/resources/documentation.html"}')
+    returnval['hits-total'] = results.hits
+    returnval['hits-returned'] = len(results)
+    returnval["facets"]= {}
     if "facet_fields" in results.facets.keys():
         returnval['facets']=fixFacets(results)
     returnval['results']=[]
@@ -415,8 +417,7 @@ def format_resource_fromdb(results,sqlresults):
                 returnjsonresult['ratings']=get_ratings(solrres['id'])
                 returnval['results'].append(returnjsonresult)
 
-    returnval['hits-total'] = results.hits
-    returnval['hits-returned'] = len(results)
+
     return returnval
 
 def format_resource(results):
