@@ -269,6 +269,13 @@ def insert_new_resource(j):
         return({"status":"fail","error":str(solrerr)})
     return({"status":"success","error":None})
 
+
+def UpdateFacets(j):
+    for key in ["publisher","author_org.name","language_primary","license","target_audience","lr_type","accessibility_features.name","author_names","languages_secondary","ed_frameworks.nodes.name","purpose","usage_info","keywords","media_type","ed_frameworks.name","access_cost","subject"]:
+        if key in j.keys():
+            j['facet_'+key]=j[key]
+    return j
+
 def update_resource(j):
     db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
     #TODO update all facets.
