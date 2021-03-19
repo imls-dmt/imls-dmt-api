@@ -826,13 +826,88 @@ def learning_resource_post(document):
     if request.method == 'POST':
 
         if request.is_json:
-            template = temlate_doc('learningresources')
             content = request.get_json()
+            template = temlate_doc('learningresources')
+            
             if 'id' not in content or content['id']=="": #treat as if it is a new document
                     return insert_new_resource(content)
             else: #treat as existing
                     return update_resource(content)
-                    return "not yet implemented."
+                    
+                
+
+    if request.method == 'GET':
+        if document is not None:
+            allowed_documents = ['documentation.html',
+                                 'documentation.md', 'documentation.htm']
+            if document not in allowed_documents:
+                return render_template('bad_document.html', example="documentation.html"), 400
+            else:
+                this_docstring = learning_resource_post.__doc__ + \
+                    json.dumps(temlate_doc('learningresources'))
+                result1 = resources.search("*:*", rows=1)
+                id = result1.docs[0]["id"]
+                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                return generate_documentation(this_docstring, document, request, True)
+
+    return "Documentation not implemented."
+
+
+
+
+# Resource interaction
+@app.route("/api/pub_status/", defaults={'status': None}, methods=['POST'])
+@app.route("/api/pub_status/<status>", methods=['GET', 'POST'])
+@login_required
+def pub_status(status):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Builds Solr searches and returns results for learning resources.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Not yet implemented
+    DELETE
+        Not yet implemented
+
+
+
+    ;;field:{"name":"template","type":"","example":"template","description":"Generate empty resource from schema"}
+    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the learning resource."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:"""
+
+    if request.method == 'POST':
+        content = request.get_json()
+        results = resources.search("id:"+content["id"], rows=1)
+        doc={}
+        if len(results.docs) > 0:
+            doc=results.docs[0]
+        else:
+            return{"status":"error","message":"Invalid ID"},400
+        current_status=doc['pub_status']
+        if status in ['in-process','published','in-review','delete-request','pre-pub-review','deleted']:
+            doc['pub_status']=status
+            return update_resource(doc)
+
+        else:
+            #pub_status:in-process OR pub_status:published  OR pub_status:in-review
+            return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'delete-request'"},400
+                    
                 
 
     if request.method == 'GET':
