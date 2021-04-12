@@ -117,6 +117,7 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"accessibility_summary", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"ratings", "type":"pfloat", "multiValued":true, "stored":true,"required":false ,"indexed":false}}',
  '{"add-field": {"name":"rating", "type":"pfloat", "multiValued":false, "stored":true,"required":false ,"indexed":false}}',
+ '{"add-field": {"name":"notes", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":false}}',
  '{"add-field": {"name":"creator", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"md_record_id", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',]
 
