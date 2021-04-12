@@ -109,7 +109,8 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"locator_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"country_of_origin", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"credential_status", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"modification_date", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"resource_modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"name_identifier", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"name_identifier_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"accessibility_features.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -600,6 +601,7 @@ for lr in Learning_Resources:
     elif lr.status==1:
         j['pub_status']='published'
 
+    j['modification_date']=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     j['url']=get_value(LRUrls.field_lr_url_url,LRUrls)
     j['access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
     j['facet_access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)

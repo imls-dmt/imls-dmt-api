@@ -411,6 +411,8 @@ def format_resource_fromdb(results,sqlresults):
             for k in list_keys:
                 if k.startswith('facet_'):
                     returnjsonresult.pop(k)
+                if k=='notes':
+                    returnjsonresult.pop(k)
             if returnjsonresult["id"]==solrres['id']:
                 returnjsonresult['score']=get_score(results,returnjsonresult['id']) 
                 returnjsonresult['rating']=solrres['rating']
@@ -1108,6 +1110,8 @@ def learning_resources(document):
         searchstring = append_searchstring(searchstring, request, "publisher")
         searchstring = append_searchstring(searchstring, request, "version")
         searchstring = append_searchstring(searchstring, request, "created")
+        searchstring = append_searchstring(searchstring, request, "resource_modification_date")
+        searchstring = append_searchstring(searchstring, request, "modification_date")
         searchstring = append_searchstring(searchstring, request, "published")
         searchstring = append_searchstring(
             searchstring, request, "access_features")
@@ -1379,7 +1383,7 @@ def schema(collection, returntype):
                 thisfield['name'] = field['name']
                 thisfield['type'] = typemap[field['type']]
                 schemajson['fields'].append(thisfield)
-                if 'multivalue' in field:
+                if 'multiValued' in field:
                     thisfield['multivalue'] = field['multiValued']
                 if 'required' in field:
                     thisfield['required'] = field['required']
