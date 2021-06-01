@@ -1022,6 +1022,8 @@ def learning_resources(document):
     ;;field:{"name":"media_type","type":"string","example":"\\\"Moving Image\\\"","description":""}
     ;;field:{"name":"lr_type","type":"string","example":"\\\"Learning Activity\\\"","description":""}
     ;;field:{"name":"limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 10"}
+    ;;field:{"name":"facet_limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 100. -1 shows all."}
+    ;;field:{"name":"facet_sort","type":"string","example":"count","description":"Order of the facets can be \\\"count\\\" or \\\"index\\\". Index is Alphabetic"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     ;;postjson:{"search": [{"group": "and","and": [{"field": "keywords","string": "ethics","type": "simple"},{"field": "created","string": "2019-05-20T17:33:18Z","type": "gte"} ],"or": [{"field": "submitter_name","string": "Karl","type": "simple"}]}],"limit": 10,"offset": 5, "sort":"id asc", "facet_limit":-1,"facet_sort":"count"}
     {"search":[{"group":"and","and":[{"string":"Data archiving","field":"keywords","type":"match"}]}]}
