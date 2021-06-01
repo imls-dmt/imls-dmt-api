@@ -1636,6 +1636,33 @@ def vocabularies(document):
         else:
             return{"status":"error","message":"You must be logged in"},400
 
+@app.route("/login_json", methods=['POST'])
+def login_json():
+    """ 
+    POST:
+        Validates credentials of users and creates and stores a session.
+        Form Request: 
+
+            username (string):  The users username.
+            password (string):  The users password.
+        Returns: 
+            cookie:session token
+    """
+
+    if request.method == 'POST':
+        r_obj=request.get_json()
+        user_object = get_user(r_obj['username'])
+        if user_object:
+            computed = user_object['hash']
+            passwd = r_obj['password']
+            if drash.verify(passwd, computed):
+                login_user(
+                    User(user_object['id'], user_object['groups'], user_object['name']))
+                return redirect(url_for('protected'))
+
+        return 'Bad login'
+
+
 
 
 @app.route("/login/", methods=['GET','POST'])
