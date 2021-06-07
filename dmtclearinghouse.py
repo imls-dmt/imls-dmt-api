@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, render_template, make_response
+from flask import Flask, request, redirect, url_for, render_template, make_response, session
 import pysolr
 import json
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin, current_user
@@ -81,6 +81,13 @@ users = pysolr.Solr(app.config["SOLR_ADDRESS"]+"users/", timeout=10)
 taxonomies = pysolr.Solr(app.config["SOLR_ADDRESS"]+"taxonomies/", timeout=10)
 timestamps = pysolr.Solr(app.config["SOLR_ADDRESS"]+"timestamps/", timeout=10)
 feedback = pysolr.Solr(app.config["SOLR_ADDRESS"]+"feedback/", timeout=10)
+questions = pysolr.Solr(app.config["SOLR_ADDRESS"]+"questions/", timeout=10)
+question_groups = pysolr.Solr(app.config["SOLR_ADDRESS"]+"question_groups/", timeout=10)
+surveys = pysolr.Solr(app.config["SOLR_ADDRESS"]+"surveys/", timeout=10)
+answers = pysolr.Solr(app.config["SOLR_ADDRESS"]+"answers/", timeout=10)
+
+
+
 # flask_login implementation.
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -656,6 +663,469 @@ def normalize_rating(id):
 "email":"me@mysite.com",
 "resourceid":'35ab5641-2719-4faf-8b1e-2c4c57e15f5e'
 }'''
+
+
+@login_required
+@app.route("/api/questions/",methods=['GET'])
+def questions_func():
+    obj={'questions':[]}
+    q=questions.search("*:*")
+    for qs in q:
+        obj['questions'].append(qs)
+    return obj
+
+
+@login_required
+@app.route("/api/question/", defaults={'document': None}, methods=['GET','POST'])
+@app.route("/api/question/<document>", methods=['GET', 'POST'])
+def question_func(document):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Updates or creates a question.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Will not be implemented
+    DELETE
+        Not yet implemented
+
+
+
+    ;;field:{"name":"question","type":"string","example":"How usefull was this resource?","description":"The question label."}
+    ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
+    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:"""
+
+    if request.method == 'GET':
+        
+        this_docstring = addfeedback.__doc__
+        if document is not None:
+            allowed_documents = ['documentation.html',
+                                    'documentation.md', 'documentation.htm']
+            if document not in allowed_documents:
+                return render_template('bad_document.html', example="documentation.html"), 400
+            else:
+                print("else")
+                result1 = resources.search("*:*", rows=1)
+                id = result1.docs[0]["id"]
+                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                
+                return generate_documentation(this_docstring, document, request, True)
+    if request.method == 'POST':
+        content = request.get_json()
+        if document=="add":
+            insertobj={}
+
+            insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            if request.is_json:
+                content = request.get_json()
+                if 'label' in content.keys() and 'name' in content.keys() and 'input_type' in content.keys() and 'options' in content.keys() and 'element' in content.keys() and 'id' not in content.keys(): #add
+                    print("add")
+                    insertobj['label']=content['label']
+                    insertobj['name']=content['name']
+                    insertobj['element']=content['element']
+                    insertobj['options']=content['options']
+                    insertobj['input_type']=content['input_type']
+                    questions.add([insertobj])
+                    questions.commit()
+                    return insertobj
+                elif 'label' in content.keys() and 'name' in content.keys() and 'input_type' in content.keys() and 'options' in content.keys() and 'element' in content.keys() and 'id' in content.keys(): #update
+                    print("???")
+                    insertobj['label']=content['label']
+                    insertobj['name']=content['name']
+                    insertobj['element']=content['element']
+                    insertobj['options']=content['options']
+                    insertobj['input_type']=content['input_type']
+                    insertobj['id']=content['id']
+                    questions.add([insertobj])
+                    questions.commit()
+                    return insertobj
+                else:
+                    return{"status":"error","message":"submitted json not well formed."}
+        if document=="delete":
+            if 'id' in content.keys(): #update
+                q='id:'+content['id']
+                questions.delete(q=q)
+                questions.commit()
+                return {'status':'success','message':'id:'+content['id']+" removed."}
+
+    
+
+
+
+
+
+
+@app.route("/surveytest/<survey_id>", methods=['GET'])
+def surveytest(survey_id):
+    return render_template('surveytest.html', survey_id=survey_id)
+
+
+
+@app.route("/api/submit_survey/<survey_id>", methods=['POST'])
+def submit_survey(survey_id):
+    form_answers=request.form.to_dict(flat=False)
+
+
+
+
+
+    for key in form_answers.keys():
+        answers_list=[]
+        if key!='submitter':
+            if form_answers[key][0].isdigit():
+                form_answers[key][0]=int(form_answers[key][0])
+            
+            obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}
+            answers_list.append(obj)
+        answers.add(answers_list)
+        answers.commit()
+        print(json.dumps(answers_list))
+
+    return ":)"
+
+
+@app.route("/api/survey_responses/<survey_id>", methods=['GET'])
+def survey_responses(survey_id):
+    answers_obj={'answers':[]}
+    answers_search=answers.search("surveys_id:"+survey_id, sort="respondent_id desc")
+    for answer in answers_search:
+
+        q=questions.search("id:"+answer['question_id'],rows=1)
+
+        answer['label']=q.docs[0]['label']
+        if q.docs[0]['element']=='select':
+
+            for opt in q.docs[0]['options']:
+                obj_json=json.loads(json.dumps(opt).replace("\"", '').replace("'", '"'))
+                if answer['id']=="39c85230-a849-49ec-8ad3-fc5890875ac7":
+                    print(answer['id'])
+                    print(int(obj_json['value']),int(answer['answer']))
+                    print(int(obj_json['value'])==int(answer['answer']))
+                if int(obj_json['value'])==int(answer['answer']):
+                    answer['answer_text']=obj_json['key']
+            answer['answer']=int(answer['answer'])
+        else:
+            answer['answer_text']=answer['answer']
+
+        answers_obj['answers'].append(answer)
+    return(answers_obj)
+
+@app.route("/api/get_survey/<survey_id>", methods=['GET'])
+def get_survey(survey_id):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Updates or creates a question.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Will not be implemented
+    DELETE
+        Not yet implemented
+
+
+
+    ;;field:{"name":"question","type":"string","example":"How usefull was this resource?","description":"The question label."}
+    ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
+    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:"""
+    surveys_result1 = surveys.search("id:"+survey_id, rows=1)
+    groups=[]
+    print("_________________________________")
+    print(surveys_result1.docs)
+    print("_________________________________")
+    for doc in surveys_result1.docs:
+        for group_id in doc['question_group_ids']:
+            print(group_id)
+
+
+   
+            group_obj={}
+            question_groups_results=question_groups.search("id:"+group_id, rows=1)
+            print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX1")
+            print(question_groups_results.docs)
+            print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX2")
+            group_obj['label']=question_groups_results.docs[0]['label']
+            group_obj['questions']=[]
+            for question_id in question_groups_results.docs[0]['question_ids']:
+                print(question_id)
+                question_results=questions.search("id:"+question_id, rows=1)
+                question_obj={'label':None,'name':None,'element':None,'options':[],'input_type':None}
+                things=['label','name','element','options','input_type','id']
+                for thing in things:
+                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    print(question_results.docs)
+                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    if thing in question_results.docs[0].keys():
+                        if thing=='options':
+                            opt_arr=[]
+                            for opt_str in question_results.docs[0][thing]:
+
+                                opt_arr.append(json.loads(opt_str.replace("\'","\"")))
+                            question_obj[thing]= opt_arr   
+                        else:
+                            question_obj[thing]=question_results.docs[0][thing]
+        
+
+
+
+                group_obj['questions'].append(question_obj)
+            print(question_groups_results.docs[0]['question_ids'])
+            groups.append(group_obj)
+    print(groups)
+    return_object={}
+    return_object['label']=surveys_result1.docs[0]['label']
+    return_object['question_groups']=groups
+    return (return_object)
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route("/api/surveys/", defaults={'document': None}, methods=['GET','POST'])
+@app.route("/api/surveys/<document>", methods=['GET', 'POST'])
+def surveys_func(document):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Updates or creates a question.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Will not be implemented
+    DELETE
+        Not yet implemented
+
+
+
+    ;;field:{"name":"question","type":"string","example":"How usefull was this resource?","description":"The question label."}
+    ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
+    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:"""
+
+    if request.method == 'GET':
+        
+        this_docstring = addfeedback.__doc__
+        if document is not None:
+            allowed_documents = ['documentation.html',
+                                    'documentation.md', 'documentation.htm']
+            if document not in allowed_documents:
+                return render_template('bad_document.html', example="documentation.html"), 400
+            else:
+                print("else")
+                result1 = resources.search("*:*", rows=1)
+                id = result1.docs[0]["id"]
+                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                
+                return generate_documentation(this_docstring, document, request, True)
+    if request.method == 'POST':
+        content = request.get_json()
+        if document=="add":
+            insertobj={}
+
+            insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            if request.is_json:
+                content = request.get_json()
+
+
+                if 'label' in content.keys() and 'question_group_ids' in content.keys() and 'resourceid' in content.keys() and 'id' not in content.keys(): #add
+                    print("add")
+                    insertobj['label']=content['label']
+                    insertobj['question_group_ids']=content['question_group_ids']
+                    insertobj['resourceid']=content['resourceid']
+                    surveys.add([insertobj])
+                    surveys.commit()
+                    return insertobj
+                elif 'label' in content.keys() and 'question_group_ids' in content.keys() and 'resourceid' in content.keys() and 'id' in content.keys(): #update
+                    print("???")
+                    insertobj['label']=content['label']
+                    insertobj['question_group_ids']=content['question_group_ids']
+                    insertobj['resourceid']=content['resourceid']
+                    insertobj['id']=content['id']
+                    surveys.add([insertobj])
+                    surveys.commit()
+                    return insertobj
+                else:
+                    return{"status":"error","message":"submitted json not well formed."}
+        if document=="delete":
+            if 'id' in content.keys(): #update
+                q='id:'+content['id']
+                surveys.delete(q=q)
+                surveys.commit()
+                return {'status':'success','message':'id:'+content['id']+" removed."}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route("/api/question_groups/", defaults={'document': None}, methods=['GET','POST'])
+@app.route("/api/question_groups/<document>", methods=['GET', 'POST'])
+def question_groups_func(document):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Updates or creates a question.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Will not be implemented
+    DELETE
+        Not yet implemented
+
+
+
+    ;;field:{"name":"question","type":"string","example":"How usefull was this resource?","description":"The question label."}
+    ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
+    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:"""
+
+    if request.method == 'GET':
+        
+        this_docstring = addfeedback.__doc__
+        if document is not None:
+            allowed_documents = ['documentation.html',
+                                    'documentation.md', 'documentation.htm']
+            if document not in allowed_documents:
+                return render_template('bad_document.html', example="documentation.html"), 400
+            else:
+                print("else")
+                result1 = resources.search("*:*", rows=1)
+                id = result1.docs[0]["id"]
+                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                
+                return generate_documentation(this_docstring, document, request, True)
+    if request.method == 'POST':
+        content = request.get_json()
+        if document=="add":
+            insertobj={}
+
+            insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            if request.is_json:
+                content = request.get_json()
+                if 'label' in content.keys() and 'question_ids' in content.keys() and 'id' not in content.keys(): #add
+                    print("add")
+                    insertobj['label']=content['label']
+                    insertobj['question_ids']=content['question_ids']
+    
+                    question_groups.add([insertobj])
+                    question_groups.commit()
+                    return insertobj
+                elif 'label' in content.keys() and 'question_ids' in content.keys() and 'id' in content.keys(): #update
+                    print("???")
+                    insertobj['label']=content['label']
+                    insertobj['question_ids']=content['question_ids']
+                    insertobj['id']=content['id']
+                    question_groups.add([insertobj])
+                    question_groups.commit()
+                    return insertobj
+                else:
+                    return{"status":"error","message":"submitted json not well formed."}
+        if document=="delete":
+            if 'id' in content.keys(): #update
+                q='id:'+content['id']
+                question_groups.delete(q=q)
+                question_groups.commit()
+                return {'status':'success','message':'id:'+content['id']+" removed."}
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @app.route("/api/feedback/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/feedback/<document>", methods=['GET', 'POST'])
 def addfeedback(document):
