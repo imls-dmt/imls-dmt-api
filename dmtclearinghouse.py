@@ -21,14 +21,23 @@ from flask_oauthlib.provider import OAuth2Provider
 from oauthlib.oauth2 import WebApplicationClient, BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from feedgen.feed import FeedGenerator
+import sys
+from flask_cors import CORS
+
+
+from flask.sessions import SecureCookieSessionInterface
 
 
 
+sys.path.append("/opt/DMTClearinghouse/")
 
 
 # Create flask app
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
+CORS(app,supports_credentials=True)
+session_cookie = SecureCookieSessionInterface().get_signing_serializer(app)
+
 def randomString(stringLength=8):
     letters = string.hexdigits
     return ''.join(random.choice(letters) for i in range(stringLength))
@@ -200,6 +209,14 @@ class User(UserMixin):
         self.groups = groups
         self.name = name
 
+
+#This should add the cookie to the response.
+@app.after_request
+def cookies(response):
+    session_cookie = SecureCookieSessionInterface().get_signing_serializer(app)
+    same_cookie = session_cookie.dumps(dict(session))
+    response.headers.add("Set-Cookie", f"session={same_cookie}; Secure; HttpOnly; SameSite=None; Path=/;")
+    return response
 
 # Callback for login_user
 @login_manager.user_loader
@@ -1656,11 +1673,11 @@ def login_json():
             computed = user_object['hash']
             passwd = r_obj['password']
             if drash.verify(passwd, computed):
-                login_user(
-                    User(user_object['id'], user_object['groups'], user_object['name']))
-                return redirect(url_for('protected'))
+                login_user(User(user_object['id'], user_object['groups'], user_object['name']))
+                resp = make_response({'message':'Good login'});
+                return resp
 
-        return 'Bad login'
+        return {'message':'Bad login'}
 
 
 
@@ -1695,6 +1712,11 @@ def login():
 
         return 'Bad login'
 
+@app.route("/logout_json")
+@login_required
+def logout_json():
+    logout_user()
+    return {"message":"Logged out"}
 
 @app.route("/logout/")
 @login_required
@@ -1814,7 +1836,7 @@ def user_groups():
         jsonobj={'groups':current_user.groups}
     else:
         jsonobj={'groups':[]}
-    return json.dumps(jsonobj)
+    return jsonobj
 
 
 @app.route("/user/<action>", methods=['GET','POST'])
@@ -2078,7 +2100,7 @@ def user(action):
             return({"status":"error","message":"Method "+action+" not found"})
         else:
             return({"status":"error","message":"no JSON found in post"})
-    return("How did I get here.")
+    return("API")
 @app.route("/static/<path:path>")
 def send_static(path):
     return send_from_file('static', path)
