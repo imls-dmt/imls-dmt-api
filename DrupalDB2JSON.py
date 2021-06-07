@@ -161,7 +161,8 @@ question_fields=[
  '{"add-field": {"name":"label", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"name", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"element", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"options", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"options.key", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"options.value", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"input_type", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}']
 
 question_group_fields=[
@@ -212,6 +213,7 @@ for field in question_group_fields:
         print(r.text)
 
 for field in question_fields:
+    print(field)
     j=json.loads(field)
     # print(j)
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
