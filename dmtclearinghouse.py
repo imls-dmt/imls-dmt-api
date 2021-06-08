@@ -1002,9 +1002,11 @@ def surveys_func(document):
             if request.is_json:
                 content = request.get_json()
 
+                q_in_group=answers.search("surveys_id:"+content['id'])
+                if len(q_in_group.docs)>0:
+                    return{"status":"error","message":"Survey Update Failed. There Are Associated Questions that Exist."}
 
                 if 'label' in content.keys() and 'question_group_ids' in content.keys() and 'resourceid' in content.keys() and 'id' not in content.keys(): #add
-                    print("add")
                     insertobj['label']=content['label']
                     insertobj['question_group_ids']=content['question_group_ids']
                     insertobj['resourceid']=content['resourceid']
@@ -1012,14 +1014,17 @@ def surveys_func(document):
                     surveys.commit()
                     return insertobj
                 elif 'label' in content.keys() and 'question_group_ids' in content.keys() and 'resourceid' in content.keys() and 'id' in content.keys(): #update
-                    print("???")
                     insertobj['label']=content['label']
                     insertobj['question_group_ids']=content['question_group_ids']
                     insertobj['resourceid']=content['resourceid']
                     insertobj['id']=content['id']
-                    surveys.add([insertobj])
-                    surveys.commit()
-                    return insertobj
+                    try:
+                        questions.add([insertobj])
+                        questions.commit()
+                        return{"status":"success","message":"Survey Updated Successfully."}
+                    except:
+                        return{"status":"error","message":"Survey Update Failed."}
+
                 else:
                     return{"status":"error","message":"submitted json not well formed."}
         if document=="delete":
