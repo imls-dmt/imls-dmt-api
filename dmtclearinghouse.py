@@ -2185,10 +2185,10 @@ def login_json():
             passwd = r_obj['password']
             if drash.verify(passwd, computed):
                 login_user(User(user_object['id'], user_object['groups'], user_object['name']))
-                resp = make_response({'message':'Good login'});
+                resp = make_response({'status':'success','message':'Good login'});
                 return resp
 
-        return {'message':'Bad login'}
+        return {'status':'error','message':'Bad login'}
 
 
 
