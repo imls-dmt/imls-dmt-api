@@ -318,10 +318,10 @@ def update_resource(j):
     elif "editor" in current_user.groups:
         can_edit=True
     elif "reviewer" in current_user.groups:
-        if status in ['pre-pub-review','delete-request','in-process'] and current_status not in ['published']:
+        if status in ['pre-pub-review','delete-request','in-process','in-review'] and current_status not in ['published']:
             can_edit=True
     elif "md-entry" in current_user.groups :
-        if status =='in-review' and current_status =='in-process':
+        if status ==['in-review','in-process'] and current_status =='in-process':
             can_edit=True
     if can_edit:
         db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
