@@ -671,6 +671,19 @@ def questions_func():
     obj={'questions':[]}
     q=questions.search("*:*")
     for qs in q:
+        # question_ids:ef29fc71-bc49-4f8f-83ba-2beeafe4cd3c
+        q_in_group=question_groups.search("question_ids:"+qs['id'])
+        if len(q_in_group.docs)>0:
+            qs['protected']=True
+        else:
+            qs['protected']=False
+        if qs['element']=='select':
+            opt_arr=[]
+            for opt_string in qs['options']:
+                
+                opt_arr.append(json.loads(opt_string.replace('\'','"')))
+            qs['options']=opt_arr
+            
         obj['questions'].append(qs)
     return obj
 
