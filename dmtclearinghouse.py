@@ -755,8 +755,8 @@ def question_func(document):
                     insertobj['options']=content['options']
                     insertobj['input_type']=content['input_type']
                     try:
-                    questions.add([insertobj])
-                    questions.commit()
+                        questions.add([insertobj])
+                        questions.commit()
                         return{"status":"success","message":"Question Added Successfully."}
                     except:
                         return{"status":"error","message":"Question Insert Failed."}
@@ -774,8 +774,8 @@ def question_func(document):
                     insertobj['input_type']=content['input_type']
                     insertobj['id']=content['id']
                     try:
-                    questions.add([insertobj])
-                    questions.commit()
+                        questions.add([insertobj])
+                        questions.commit()
                         return{"status":"success","message":"Question Updated Successfully."}
                     except:
                         return{"status":"error","message":"Question Update Failed."}
