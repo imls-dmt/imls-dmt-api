@@ -754,10 +754,18 @@ def question_func(document):
                     insertobj['element']=content['element']
                     insertobj['options']=content['options']
                     insertobj['input_type']=content['input_type']
+                    try:
                     questions.add([insertobj])
                     questions.commit()
-                    return insertobj
+                        return{"status":"success","message":"Question Added Successfully."}
+                    except:
+                        return{"status":"error","message":"Question Insert Failed."}
                 elif 'label' in content.keys() and 'name' in content.keys() and 'input_type' in content.keys() and 'options' in content.keys() and 'element' in content.keys() and 'id' in content.keys(): #update
+
+                    q_in_group=question_groups.search("question_ids:"+content['id'])
+                    if len(q_in_group.docs)>0:
+                        return{"status":"error","message":"Question Update Failed. Question Exists in Existing Question Group."}
+                                                                                                      
                     print("???")
                     insertobj['label']=content['label']
                     insertobj['name']=content['name']
@@ -765,9 +773,12 @@ def question_func(document):
                     insertobj['options']=content['options']
                     insertobj['input_type']=content['input_type']
                     insertobj['id']=content['id']
+                    try:
                     questions.add([insertobj])
                     questions.commit()
-                    return insertobj
+                        return{"status":"success","message":"Question Updated Successfully."}
+                    except:
+                        return{"status":"error","message":"Question Update Failed."}
                 else:
                     return{"status":"error","message":"submitted json not well formed."}
         if document=="delete":
