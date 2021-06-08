@@ -1120,10 +1120,22 @@ def question_groups_func(document):
                     question_groups.commit()
                     return insertobj
                 elif 'label' in content.keys() and 'question_ids' in content.keys() and 'id' in content.keys(): #update
+
+                    qg_in_surveys=surveys.search("question_group_ids:"+content['id'])
+                    if len(qg_in_surveys.docs)>0:
+                        return{"status":"error","message":"Question Update Failed. Question Exists in Existing Question Group."}
+
                     print("???")
                     insertobj['label']=content['label']
                     insertobj['question_ids']=content['question_ids']
                     insertobj['id']=content['id']
+                    try:
+                        questions.add([insertobj])
+                        questions.commit()
+                        return{"status":"success","message":"Question Group Updated Successfully."}
+                    except:
+                        return{"status":"error","message":"Question Group Update Failed."}
+                    
                     question_groups.add([insertobj])
                     question_groups.commit()
                     return insertobj
