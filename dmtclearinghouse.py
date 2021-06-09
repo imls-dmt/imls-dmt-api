@@ -824,30 +824,57 @@ def submit_survey(survey_id):
     return ":)"
 
 
-@app.route("/api/survey_responses/<survey_id>", methods=['GET'])
-def survey_responses(survey_id):
+@app.route("/api/survey_responses/<outtype>/<survey_id>", methods=['GET'])
+def survey_responses(outtype,survey_id):
     answers_obj={'answers':[]}
+    typelist=['answers','questions']
     answers_search=answers.search("surveys_id:"+survey_id, sort="respondent_id desc")
-    for answer in answers_search:
+    if outtype in typelist:
+        if outtype=="answers": 
+            for answer in answers_search:
+                q=questions.search("id:"+answer['question_id'],rows=1)
+                answer['label']=q.docs[0]['label']
+                if q.docs[0]['element']=='select':
+                    for opt in q.docs[0]['options']:
+                        obj_json=json.loads(json.dumps(opt).replace("\"", '').replace("'", '"'))
+                        if int(obj_json['value'])==int(answer['answer']):
+                            answer['answer_text']=obj_json['key']
+                    answer['answer']=int(answer['answer'])
+                else:
+                    answer['answer_text']=answer['answer']
+                answers_obj['answers'].append(answer)
+        elif outtype=="questions":
+            placeholder={}
+            for answer in answers_search:
+                    q=questions.search("id:"+answer['question_id'],rows=1)
+                    if q.docs[0]['id'] not in placeholder:
+                        placeholder[q.docs[0]['id']]={'question_id':q.docs[0]['id'],"label": q.docs[0]['label'],"answers": [],"answers_text": []}
+                    placeholder[q.docs[0]['id']]['type']=q.docs[0]['element']
+                    if q.docs[0]['element']=='select':
+                        for opt in q.docs[0]['options']:
+                            obj_json=json.loads(json.dumps(opt).replace("\"", '').replace("'", '"'))
+                            if int(obj_json['value'])==int(answer['answer']):
+                                placeholder[q.docs[0]['id']]['answers_text'].append(obj_json['key'])
+                        placeholder[q.docs[0]['id']]['answers'].append(int(answer['answer']))
+                    else:
+                        placeholder[q.docs[0]['id']]['answers'].append(answer['answer'])
+                        placeholder[q.docs[0]['id']]['answers_text'].append(answer['answer'])
+            for placeholder_key in placeholder:
+                if placeholder[placeholder_key]['type']=='select':
+                    placeholder[placeholder_key]['average']=sum(placeholder[placeholder_key]['answers'])/len(placeholder[placeholder_key]['answers'])
+                else:
+                    placeholder[placeholder_key]['average']=None
+                answers_obj['answers'].append(placeholder[placeholder_key])
 
-        q=questions.search("id:"+answer['question_id'],rows=1)
 
-        answer['label']=q.docs[0]['label']
-        if q.docs[0]['element']=='select':
 
-            for opt in q.docs[0]['options']:
-                obj_json=json.loads(json.dumps(opt).replace("\"", '').replace("'", '"'))
-                if answer['id']=="39c85230-a849-49ec-8ad3-fc5890875ac7":
-                    print(answer['id'])
-                    print(int(obj_json['value']),int(answer['answer']))
-                    print(int(obj_json['value'])==int(answer['answer']))
-                if int(obj_json['value'])==int(answer['answer']):
-                    answer['answer_text']=obj_json['key']
-            answer['answer']=int(answer['answer'])
-        else:
-            answer['answer_text']=answer['answer']
 
-        answers_obj['answers'].append(answer)
+               
+    else:
+        return{'status':'error','message':'Unknown type '+ outtype+' specified'}
+
+
+
     return(answers_obj)
 
 @app.route("/api/get_survey/<survey_id>", methods=['GET'])
