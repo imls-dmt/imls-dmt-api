@@ -856,15 +856,39 @@ def survey_responses(outtype,survey_id):
                             if int(obj_json['value'])==int(answer['answer']):
                                 placeholder[q.docs[0]['id']]['answers_text'].append(obj_json['key'])
                         placeholder[q.docs[0]['id']]['answers'].append(int(answer['answer']))
+                        placeholder[q.docs[0]['id']]['respondent_ids'].append(answer['respondent_id'])
                     else:
                         placeholder[q.docs[0]['id']]['answers'].append(answer['answer'])
                         placeholder[q.docs[0]['id']]['answers_text'].append(answer['answer'])
+                        placeholder[q.docs[0]['id']]['respondent_ids'].append(answer['respondent_id'])
             for placeholder_key in placeholder:
                 if placeholder[placeholder_key]['type']=='select':
                     placeholder[placeholder_key]['average']=sum(placeholder[placeholder_key]['answers'])/len(placeholder[placeholder_key]['answers'])
                 else:
                     placeholder[placeholder_key]['average']=None
                 answers_obj['answers'].append(placeholder[placeholder_key])
+        elif outtype=="respondents":
+            placeholder={}
+            for answer in answers_search:
+                this_question=questions.search("id:"+answer['question_id'],rows=1)
+                if answer['respondent_id'] not in placeholder:
+                        placeholder[answer['respondent_id']]={'respondent_id':answer['respondent_id'],"questions_and_answers":[]}
+                q_n_a={"question":this_question.docs[0]['label']}
+                if this_question.docs[0]['element']=='select':
+                    q_n_a['answer']=int(answer['answer'])
+                    new_dict={}
+                    for opt in this_question.docs[0]['options']:
+                        obj_json=json.loads(json.dumps(opt).replace("\"", '').replace("'", '"'))
+                        new_dict[int(obj_json['value'])]=obj_json['key']
+                    q_n_a['answer_text']=new_dict[int(answer['answer'])]
+                else:
+                    q_n_a['answer']=answer['answer']
+                    q_n_a['answer_text']=answer['answer']
+                placeholder[answer['respondent_id']]['questions_and_answers'].append(q_n_a)
+                
+            for placeholder_key in placeholder:
+                answers_obj['answers'].append(placeholder[placeholder_key])
+               
 
 
 
