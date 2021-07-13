@@ -689,8 +689,8 @@ def questions_func():
 
 
 @login_required
-@app.route("/api/question/", defaults={'document': None}, methods=['GET','POST'])
-@app.route("/api/question/<document>", methods=['GET', 'POST'])
+@app.route("/api/questions/", defaults={'document': None}, methods=['GET','POST'])
+@app.route("/api/questions/<document>", methods=['GET', 'POST'])
 def question_func(document):
     """ 
     GET:
@@ -739,6 +739,28 @@ def question_func(document):
                 this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
                 
                 return generate_documentation(this_docstring, document, request, True)
+        else:
+            obj={'questions':[]}
+            q=questions.search("*:*")
+            for qs in q:
+                # question_ids:ef29fc71-bc49-4f8f-83ba-2beeafe4cd3c
+                q_in_group=question_groups.search("question_ids:"+qs['id'])
+                if len(q_in_group.docs)>0:
+                    qs['protected']=True
+                else:
+                    qs['protected']=False
+                if qs['element']=='select':
+                    opt_arr=[]
+                    for opt_string in qs['options']:
+                        if isinstance(opt_string, str):
+                            opt_arr.append(json.loads(opt_string.replace('\'','"')))
+                        else:
+                            opt_arr.append(opt_string)
+                    qs['options']=opt_arr
+                qs.pop('_version_', None)    
+                obj['questions'].append(qs)
+            return obj
+    
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
@@ -754,12 +776,14 @@ def question_func(document):
                     insertobj['element']=content['element']
                     insertobj['options']=content['options']
                     insertobj['input_type']=content['input_type']
+                    insertobj=json.loads(json.dumps(insertobj))
                     try:
                         questions.add([insertobj])
                         questions.commit()
-                        return{"status":"success","message":"Question Added Successfully."}
-                    except:
-                        return{"status":"error","message":"Question Insert Failed."}
+                        q=questions.search("name:"+content['name'],rows=1)
+                        return{"status":"success","message":str(q.docs[0]['id'])}
+                    except Exception as e:
+                        return{"status":"error","message":"Question Insert Failed:"+str(e)}
                 elif 'label' in content.keys() and 'name' in content.keys() and 'input_type' in content.keys() and 'options' in content.keys() and 'element' in content.keys() and 'id' in content.keys(): #update
 
                     q_in_group=question_groups.search("question_ids:"+content['id'])
@@ -782,11 +806,15 @@ def question_func(document):
                 else:
                     return{"status":"error","message":"submitted json not well formed."}
         if document=="delete":
-            if 'id' in content.keys(): #update
-                q='id:'+content['id']
-                questions.delete(q=q)
-                questions.commit()
-                return {'status':'success','message':'id:'+content['id']+" removed."}
+            if 'id' in content.keys(): 
+                q_in_group=question_groups.search("question_ids:"+content['id'])
+                if len(q_in_group.docs)>0:
+                   return {'status':'fail','message':'Question is part of existing question group'}
+                else:
+                    q='id:'+content['id']
+                    questions.delete(q=q)
+                    questions.commit()
+                    return {'status':'success','message':'id:'+content['id']+" removed."}
 
     
 
@@ -827,7 +855,7 @@ def submit_survey(survey_id):
 @app.route("/api/survey_responses/<outtype>/<survey_id>", methods=['GET'])
 def survey_responses(outtype,survey_id):
     answers_obj={'answers':[]}
-    typelist=['answers','questions']
+    typelist=['answers','questions','respondents']
     answers_search=answers.search("surveys_id:"+survey_id, sort="respondent_id desc")
     if outtype in typelist:
         if outtype=="answers": 
@@ -846,9 +874,10 @@ def survey_responses(outtype,survey_id):
         elif outtype=="questions":
             placeholder={}
             for answer in answers_search:
+                    print(answer)
                     q=questions.search("id:"+answer['question_id'],rows=1)
                     if q.docs[0]['id'] not in placeholder:
-                        placeholder[q.docs[0]['id']]={'question_id':q.docs[0]['id'],"label": q.docs[0]['label'],"answers": [],"answers_text": []}
+                        placeholder[q.docs[0]['id']]={'question_id':q.docs[0]['id'],"label": q.docs[0]['label'],"answers": [],"answers_text": [],"respondent_ids": [],}
                     placeholder[q.docs[0]['id']]['type']=q.docs[0]['element']
                     if q.docs[0]['element']=='select':
                         for opt in q.docs[0]['options']:
@@ -1027,11 +1056,11 @@ def surveys_func(document):
     ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
     ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
-    ;;postjson:"""
-
+    ;;postjson:{"label":"Test Survey","question_group_ids":["93d2c101-33c2-4cc7-b412-a5dc53b6bf4f"],"resourceid":"bf0faa35-fa28-3e29-9377-9bbb485f45c4"}
+    """
+    
     if request.method == 'GET':
-        
-        this_docstring = addfeedback.__doc__
+        this_docstring = surveys_func.__doc__
         if document is not None:
             allowed_documents = ['documentation.html',
                                     'documentation.md', 'documentation.htm']
@@ -1044,6 +1073,20 @@ def surveys_func(document):
                 this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
                 
                 return generate_documentation(this_docstring, document, request, True)
+        else:
+            obj={'question_groups':[]}
+            q=surveys.search("*:*")
+            for qs in q:
+                
+                q_in_group=answers.search("surveys_id:"+qs['id'])
+                if len(q_in_group.docs)>0:
+                    qs['protected']=True
+                else:
+                    qs['protected']=False
+
+                qs.pop('_version_', None)
+                obj['question_groups'].append(qs)
+            return obj
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
@@ -1052,10 +1095,10 @@ def surveys_func(document):
             insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
             if request.is_json:
                 content = request.get_json()
-
-                q_in_group=answers.search("surveys_id:"+content['id'])
-                if len(q_in_group.docs)>0:
-                    return{"status":"error","message":"Survey Update Failed. There Are Associated Questions that Exist."}
+                if 'id' in content:
+                    q_in_group=answers.search("surveys_id:"+content['id'])
+                    if len(q_in_group.docs)>0:
+                        return{"status":"error","message":"Survey Update Failed. There Are Associated Questions that Exist."}
 
                 if 'label' in content.keys() and 'question_group_ids' in content.keys() and 'resourceid' in content.keys() and 'id' not in content.keys(): #add
                     insertobj['label']=content['label']
@@ -1079,11 +1122,15 @@ def surveys_func(document):
                 else:
                     return{"status":"error","message":"submitted json not well formed."}
         if document=="delete":
-            if 'id' in content.keys(): #update
-                q='id:'+content['id']
-                surveys.delete(q=q)
-                surveys.commit()
-                return {'status':'success','message':'id:'+content['id']+" removed."}
+            if 'id' in content.keys():
+                q_in_group=answers.search("surveys_id:"+content['id'])
+                if len(q_in_group.docs)>0:
+                    {'status':'fail','message':'Cannot remove Survey as there are existing answers to this question.'}
+                else:
+                    q='id:'+content['id']
+                    surveys.delete(q=q)
+                    surveys.commit()
+                    return {'status':'success','message':'id:'+content['id']+" removed."}
 
 
 
@@ -1154,6 +1201,22 @@ def question_groups_func(document):
                 this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
                 
                 return generate_documentation(this_docstring, document, request, True)
+        else:
+
+            obj={'question_groups':[]}
+            q=question_groups.search("*:*")
+            for qs in q:
+                
+                q_in_group=surveys.search("question_group_ids:"+qs['id'])
+                if len(q_in_group.docs)>0:
+                    qs['protected']=True
+                else:
+                    qs['protected']=False
+
+                qs.pop('_version_', None)
+                obj['question_groups'].append(qs)
+            return obj
+
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
@@ -1193,11 +1256,15 @@ def question_groups_func(document):
                 else:
                     return{"status":"error","message":"submitted json not well formed."}
         if document=="delete":
-            if 'id' in content.keys(): #update
-                q='id:'+content['id']
-                question_groups.delete(q=q)
-                question_groups.commit()
-                return {'status':'success','message':'id:'+content['id']+" removed."}
+            if 'id' in content.keys(): 
+                q_in_group=surveys.search("question_group_ids:"+content['id'])
+                if len(q_in_group.docs)>0:
+                    return {'status':'fail','message':'Question Group is part of exiting Survey.'}
+                else:
+                    q='id:'+content['id']
+                    question_groups.delete(q=q)
+                    question_groups.commit()
+                    return {'status':'success','message':'id:'+content['id']+" removed."}
 
     
 
