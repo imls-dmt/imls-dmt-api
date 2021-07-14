@@ -696,15 +696,15 @@ def question_func(document):
 
 
 
-    ;;field:{"name":"question","type":"string","example":"How usefull was this resource?","description":"The question label."}
-    ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
+    ;;field:{"name":"label","type":"string","example":"\\\"Is the purpose of the resource clear?\\\"","description":"The question label."}
+    ;;field:{"name":"element","type":"string","example":"select","description":"type of element(select,input, etc.)"}
     ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
-    ;;postjson:"""
+    ;;postjson:{}"""
 
     if request.method == 'GET':
         
-        this_docstring = addfeedback.__doc__
+        this_docstring = question_func.__doc__
         if document is not None:
             allowed_documents = ['documentation.html',
                                     'documentation.md', 'documentation.htm']
@@ -712,14 +712,20 @@ def question_func(document):
                 return render_template('bad_document.html', example="documentation.html"), 400
             else:
                 print("else")
-                result1 = resources.search("*:*", rows=1)
+                result1 = questions.search("*:*", rows=1)
                 id = result1.docs[0]["id"]
                 this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
                 
                 return generate_documentation(this_docstring, document, request, True)
         else:
+
+            searchstring="*:*"
+            searchstring = append_searchstring(searchstring, request, "label")
+            searchstring = append_searchstring(searchstring, request, "id")
+            searchstring = append_searchstring(searchstring, request, "element")
+            print(searchstring)
             obj={'questions':[]}
-            q=questions.search("*:*")
+            q=questions.search(searchstring,rows=100000)
             for qs in q:
                 # question_ids:ef29fc71-bc49-4f8f-83ba-2beeafe4cd3c
                 q_in_group=question_groups.search("question_ids:"+qs['id'])
