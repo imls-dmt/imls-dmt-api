@@ -958,6 +958,7 @@ def get_survey(survey_id):
     print("_________________________________")
     print(surveys_result1.docs)
     print("_________________________________")
+    resourceid=surveys_result1.docs[0]['resourceid']
     for doc in surveys_result1.docs:
         for group_id in doc['question_group_ids']:
             print(group_id)
@@ -1000,6 +1001,7 @@ def get_survey(survey_id):
     return_object={}
     return_object['label']=surveys_result1.docs[0]['label']
     return_object['question_groups']=groups
+    return_object['resourceid']=resourceid
     return (return_object)
 
 
