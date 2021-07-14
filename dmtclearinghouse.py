@@ -665,28 +665,6 @@ def normalize_rating(id):
 }'''
 
 
-@login_required
-@app.route("/api/questions/",methods=['GET'])
-def questions_func():
-    obj={'questions':[]}
-    q=questions.search("*:*")
-    for qs in q:
-        # question_ids:ef29fc71-bc49-4f8f-83ba-2beeafe4cd3c
-        q_in_group=question_groups.search("question_ids:"+qs['id'])
-        if len(q_in_group.docs)>0:
-            qs['protected']=True
-        else:
-            qs['protected']=False
-        if qs['element']=='select':
-            opt_arr=[]
-            for opt_string in qs['options']:
-                
-                opt_arr.append(json.loads(opt_string.replace('\'','"')))
-            qs['options']=opt_arr
-            
-        obj['questions'].append(qs)
-    return obj
-
 
 @login_required
 @app.route("/api/questions/", defaults={'document': None}, methods=['GET','POST'])
@@ -764,6 +742,11 @@ def question_func(document):
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
+            if 'id' in content.keys():
+                q_in_group=question_groups.search("question_ids:"+content['id'])
+                if len(q_in_group.docs)>0:
+                   return {'status':'fail','message':'Question is part of existing question group'}
+
             insertobj={}
 
             insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -815,6 +798,7 @@ def question_func(document):
                     questions.delete(q=q)
                     questions.commit()
                     return {'status':'success','message':'id:'+content['id']+" removed."}
+            return {'status':'fail','message':'id key not found'}
 
     
 
@@ -1014,15 +998,6 @@ def get_survey(survey_id):
 
 
 
-
-
-
-
-
-
-
-
-
 @app.route("/api/surveys/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/surveys/<document>", methods=['GET', 'POST'])
 def surveys_func(document):
@@ -1090,6 +1065,11 @@ def surveys_func(document):
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
+            if 'id' in content.keys():
+                q_in_group=answers.search("surveys_id:"+content['id'])
+                if len(q_in_group.docs)>0:
+                    {'status':'fail','message':'Cannot modify Survey as there are existing answers to this question.'}
+
             insertobj={}
 
             insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -1131,6 +1111,8 @@ def surveys_func(document):
                     surveys.delete(q=q)
                     surveys.commit()
                     return {'status':'success','message':'id:'+content['id']+" removed."}
+            else:
+                return {'status':'fail','message':'id key not found.'}
 
 
 
@@ -1220,6 +1202,10 @@ def question_groups_func(document):
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
+            if 'id' in content.keys(): 
+                q_in_group=surveys.search("question_group_ids:"+content['id'])
+                if len(q_in_group.docs)>0:
+                    return {'status':'fail','message':'Question Group is part of existing Survey.'}
             insertobj={}
 
             insertobj['timestamp']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -1265,6 +1251,8 @@ def question_groups_func(document):
                     question_groups.delete(q=q)
                     question_groups.commit()
                     return {'status':'success','message':'id:'+content['id']+" removed."}
+            else:
+                return {'status':'fail','message':'id key not found.'}
 
     
 
