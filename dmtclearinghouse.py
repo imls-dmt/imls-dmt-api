@@ -779,7 +779,6 @@ def question_func(document):
                     if len(q_in_group.docs)>0:
                         return{"status":"error","message":"Question Update Failed. Question Exists in Existing Question Group."}
                                                                                                       
-                    print("???")
                     insertobj['label']=content['label']
                     insertobj['name']=content['name']
                     insertobj['element']=content['element']
@@ -1038,8 +1037,8 @@ def surveys_func(document):
     ;;field:{"name":"label","type":"string","example":"\\\"LABELPLACEHOLDER\\\"","description":"The survey label."}
     ;;field:{"name":"resourceid","type":"string","example":"RESOURCEIDPLACEHOLDER","description":"The resource that is associated with this survey."}
     ;;field:{"name":"id","type":"string","example":"SURVEYIDPLACEHOLDER","description":"The ID of the survey."}
-    ;;gettablefieldnames:["Label","Resource ID","Name","ID"]
-    ;;postjson:{"label":"Test Survey","question_group_ids":["93d2c101-33c2-4cc7-b412-a5dc53b6bf4f"],"resourceid":"bf0faa35-fa28-3e29-9377-9bbb485f45c4"}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:{"label": "LABELPLACEHOLDER","resourceid": "RESOURCEIDPLACEHOLDER", "id":"SURVEYIDPLACEHOLDER"}
     """
     
     if request.method == 'GET':
@@ -1127,23 +1126,30 @@ def surveys_func(document):
                     return {'status':'success','message':'id:'+content['id']+" removed."}
             else:
                 return {'status':'fail','message':'id key not found.'}
+        if document is None:
+            searchstring = "*:*"
+            if request.is_json:
+                content = request.get_json()
+                if "label" in content:
+                    searchstring=searchstring+" AND label:\""+content["label"]+"\""
+                if "resourceid" in content:
+                    searchstring=searchstring+" AND resourceid:"+content["resourceid"]
+                if "id" in content:
+                    searchstring=searchstring+" AND id:"+content["id"]                    
+            print(searchstring)
+            obj={'surveys':[]}
+            q=surveys.search(searchstring,rows=100000)
+            for qs in q:
+                
+                q_in_group=answers.search("surveys_id:"+qs['id'])
+                if len(q_in_group.docs)>0:
+                    qs['protected']=True
+                else:
+                    qs['protected']=False
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                qs.pop('_version_', None)
+                obj['surveys'].append(qs)
+            return obj
 
 
 
@@ -1269,21 +1275,6 @@ def question_groups_func(document):
                 return {'status':'fail','message':'id key not found.'}
 
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1673,7 +1664,7 @@ def learning_resources(document):
     ;;field:{"name":"facet_limit","type":"int","example":"15","description":"Maximum number of results to return. Default is 100. -1 shows all."}
     ;;field:{"name":"facet_sort","type":"string","example":"count","description":"Order of the facets can be \\\"count\\\" or \\\"index\\\". Index is Alphabetic"}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
-    ;;postjson:{"search": [{"group": "and","and": [{"field": "keywords","string": "ethics","type": "simple"},{"field": "created","string": "2019-05-20T17:33:18Z","type": "gte"} ],"or": [{"field": "submitter_name","string": "Karl","type": "simple"}]}],"limit": 10,"offset": 5, "sort":"id asc", "facet_limit":-1,"facet_sort":"count"}
+    ;;postjson:{"search": [{"group": "and","and": [{"field": "keywords","string": "ethics","type": "simple"},{"field": "created","string": "2019-05-20T17:33:18Z","type": "gte"} ],"or": [{"field": "submitter_name","string": "Karl","type": "simple"}]}],"limit": 10,"offset": 0, "sort":"id asc", "facet_limit":-1,"facet_sort":"count"}
     {"search":[{"group":"and","and":[{"string":"Data archiving","field":"keywords","type":"match"}]}]}
     """
     summary=False
