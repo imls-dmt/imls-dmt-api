@@ -1035,10 +1035,10 @@ def surveys_func(document):
 
 
 
-    ;;field:{"name":"question","type":"string","example":"How usefull was this resource?","description":"The question label."}
-    ;;field:{"name":"type","type":"string","example":"bool","description":"The queston type."}
-    ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the question."}
-    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;field:{"name":"label","type":"string","example":"\\\"LABELPLACEHOLDER\\\"","description":"The survey label."}
+    ;;field:{"name":"resourceid","type":"string","example":"RESOURCEIDPLACEHOLDER","description":"The resource that is associated with this survey."}
+    ;;field:{"name":"id","type":"string","example":"SURVEYIDPLACEHOLDER","description":"The ID of the survey."}
+    ;;gettablefieldnames:["Label","Resource ID","Name","ID"]
     ;;postjson:{"label":"Test Survey","question_group_ids":["93d2c101-33c2-4cc7-b412-a5dc53b6bf4f"],"resourceid":"bf0faa35-fa28-3e29-9377-9bbb485f45c4"}
     """
     
@@ -1050,15 +1050,21 @@ def surveys_func(document):
             if document not in allowed_documents:
                 return render_template('bad_document.html', example="documentation.html"), 400
             else:
-                print("else")
-                result1 = resources.search("*:*", rows=1)
+                result1 = surveys.search("*:*", rows=1)
+                resourceid = result1.docs[0]["resourceid"]
+                label = result1.docs[0]["label"]
                 id = result1.docs[0]["id"]
-                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                this_docstring = this_docstring.replace('SURVEYIDPLACEHOLDER', id).replace('RESOURCEIDPLACEHOLDER', resourceid).replace('LABELPLACEHOLDER', label)
+
                 
                 return generate_documentation(this_docstring, document, request, True)
         else:
-            obj={'question_groups':[]}
-            q=surveys.search("*:*")
+            searchstring="*:*"
+            searchstring = append_searchstring(searchstring, request, "label")
+            searchstring = append_searchstring(searchstring, request, "id")
+            searchstring = append_searchstring(searchstring, request, "resourceid")
+            obj={'surveys':[]}
+            q=surveys.search(searchstring,rows=100000)
             for qs in q:
                 
                 q_in_group=answers.search("surveys_id:"+qs['id'])
@@ -1068,7 +1074,7 @@ def surveys_func(document):
                     qs['protected']=False
 
                 qs.pop('_version_', None)
-                obj['question_groups'].append(qs)
+                obj['surveys'].append(qs)
             return obj
     if request.method == 'POST':
         content = request.get_json()
