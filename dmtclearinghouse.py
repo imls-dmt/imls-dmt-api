@@ -666,9 +666,10 @@ def normalize_rating(id):
 
 
 
-@login_required
+
 @app.route("/api/questions/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/questions/<document>", methods=['GET', 'POST'])
+@login_required
 def question_func(document):
     """ 
     GET:
@@ -808,15 +809,9 @@ def question_func(document):
     
 
 
-
-
-
-
 @app.route("/surveytest/<survey_id>", methods=['GET'])
 def surveytest(survey_id):
     return render_template('surveytest.html', survey_id=survey_id)
-
-
 
 
 
@@ -1023,6 +1018,7 @@ def get_survey(survey_id):
 
 @app.route("/api/surveys/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/surveys/<document>", methods=['GET', 'POST'])
+@login_required
 def surveys_func(document):
     """ 
     GET:
@@ -1171,6 +1167,7 @@ def surveys_func(document):
 
 @app.route("/api/question_groups/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/question_groups/<document>", methods=['GET', 'POST'])
+@login_required
 def question_groups_func(document):
     """ 
     GET:
