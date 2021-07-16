@@ -818,12 +818,6 @@ def surveytest(survey_id):
 
 
 
-@app.route("/api/submit_survey/<survey_id>", methods=['POST'])
-def submit_survey(survey_id):
-    form_answers=request.form.to_dict(flat=False)
-
-
-
 
 
 @app.route("/api/submit_survey/<survey_id>", methods=['POST'])
