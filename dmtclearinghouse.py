@@ -833,8 +833,6 @@ def submit_survey(survey_id):
         for key in form_answers.keys():
             answers_list=[]
             if key!='submitter': 
-        if key!='submitter':
-            if key!='submitter': 
                 if form_answers[key][0].isdigit():
                     form_answers[key][0]=int(form_answers[key][0])
                 obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}
