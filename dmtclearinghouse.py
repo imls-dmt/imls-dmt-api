@@ -826,19 +826,43 @@ def submit_survey(survey_id):
 
 
 
-    for key in form_answers.keys():
-        answers_list=[]
+@app.route("/api/submit_survey/<survey_id>", methods=['POST'])
+def submit_survey(survey_id):
+    if request.get_json() is None:
+        form_answers=request.form.to_dict(flat=False)
+        for key in form_answers.keys():
+            answers_list=[]
+            if key!='submitter': 
         if key!='submitter':
-            if form_answers[key][0].isdigit():
-                form_answers[key][0]=int(form_answers[key][0])
-            
-            obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}
-            answers_list.append(obj)
-        answers.add(answers_list)
-        answers.commit()
-        print(json.dumps(answers_list))
+            if key!='submitter': 
+                if form_answers[key][0].isdigit():
+                    form_answers[key][0]=int(form_answers[key][0])
+                obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}
+                answers_list.append(obj)
+            answers.add(answers_list)
+            answers.commit()
+            print(json.dumps(answers_list))
 
-    return ":)"
+        return({"status":"success","message":"survey submitted successfully."})
+    else:
+        answers_json=request.get_json()
+        for jkey in ["respondent_id","answers"]:
+            if jkey not in answers_json.keys():
+                return({"status":"fail","message":jkey+" missing."})
+        answers_list=[]
+        for answer in answers_json["answers"]:
+            answer["surveys_id"]=survey_id
+            answer["respondent_id"]=answers_json["respondent_id"]
+            answers_list.append(answer)
+        try:
+            answers.add(answers_list)
+            answers.commit()
+            return({"status":"success","message":"survey submitted successfully."})
+        except Exception as e:
+            return({"status":"fail","message":str(e)})
+        
+
+
 
 
 @app.route("/api/survey_responses/<outtype>/<survey_id>", methods=['GET'])
