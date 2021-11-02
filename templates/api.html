@@ -27,9 +27,21 @@
                     <span class="card-title">/api/</span>
                  
                     {% for rule in rulelist %}
-                <div>
-                    <a href="{{rule}}">{{rule}}</a>
-                    </div>
+
+
+                    {% if rule.endswith(' (protected)') %}
+                    
+
+                    <div>
+                        <a href="{{ rule[:-12] }}">{{rule}}</a>
+                        </div>
+                    {% else %}
+                    <div>
+                        <a href="{{rule}}">{{rule}}</a>
+                        </div>
+                    {% endif %}
+
+
                     {% endfor %}
                 </div>
      

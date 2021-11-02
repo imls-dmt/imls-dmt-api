@@ -1982,12 +1982,21 @@ def api():
 
     """
     rulelist = []
+    not_protected=["/api/vocabularies/","/api/resources/","/api/feedback/","/api/schema/"]
+    print(app.url_map)
     for rule in app.url_map.iter_rules():
+        print(rule)
+        
+
         if "/api/" in rule.rule:
             if "<" not in rule.rule:
                 if rule.rule != "/api/":
                     if rule.rule+"documentation.html" not in rulelist:
-                        rulelist.append(rule.rule+"documentation.html")
+                        if rule.rule in not_protected:
+                            rulelist.append(rule.rule+"documentation.html")
+                        else:
+                            rulelist.append(rule.rule+"documentation.html (protected)")
+        
     return render_template('api.html', rulelist=rulelist)
 
 
