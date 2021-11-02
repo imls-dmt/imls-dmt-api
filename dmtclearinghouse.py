@@ -1724,7 +1724,12 @@ def learning_resources(document):
 
                 searchstring=searchstring+" AND creator:"+current_user.name
                 
-                print(current_user.__dict__)
+                
+        elif request.args.get("api-key"):
+                if request.args.get("api-key") in  app.config["API_KEYS"]:
+                    searchstring = append_searchstring(searchstring, request, "pub_status")
+                else:
+                    searchstring = searchstring+" AND pub_status:published"
         else:
             searchstring = searchstring+" AND pub_status:published"
 
@@ -2316,6 +2321,7 @@ def login_json():
             password (string):  The users password.
         Returns: 
             cookie:session token
+            json:message
     """
 
     if request.method == 'POST':
