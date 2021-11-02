@@ -615,6 +615,12 @@ def generate_documentation(docstring, document, request, jsonexample=False):
 #Routes and Handelers#
 ######################
 
+@app.errorhandler(401)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return render_template('401.html'), 401
+
+
 # Re-Index from MySQL
 @app.route("/admin/reindex/", methods=['GET'])
 @login_required
@@ -898,7 +904,7 @@ def survey_responses(outtype,survey_id):
                 answers_obj['answers'].append(placeholder[placeholder_key])
         elif outtype=="respondents":
 
-            
+
             placeholder={}
             for answer in answers_search:
                 this_question=questions.search("id:"+answer['question_id'],rows=1)
