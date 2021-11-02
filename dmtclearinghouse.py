@@ -856,7 +856,7 @@ def submit_survey(survey_id):
 def survey_responses(outtype,survey_id):
     answers_obj={'answers':[]}
     typelist=['answers','questions','respondents']
-    answers_search=answers.search("surveys_id:"+survey_id, sort="respondent_id desc")
+    answers_search=answers.search("surveys_id:"+survey_id, sort="respondent_id desc",rows=10000000)
     if outtype in typelist:
         if outtype=="answers": 
             for answer in answers_search:
@@ -897,6 +897,8 @@ def survey_responses(outtype,survey_id):
                     placeholder[placeholder_key]['average']=None
                 answers_obj['answers'].append(placeholder[placeholder_key])
         elif outtype=="respondents":
+
+            
             placeholder={}
             for answer in answers_search:
                 this_question=questions.search("id:"+answer['question_id'],rows=1)
