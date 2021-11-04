@@ -1024,10 +1024,9 @@ def get_survey(survey_id):
 
 
 
-@app.route("/api/surveys/", defaults={'document': None}, methods=['GET','POST'])
-@app.route("/api/surveys/<document>", methods=['GET', 'POST'])
-@login_required
-def surveys_func(document):
+@app.route("/api/surveys/", defaults={'document': None}, methods=['GET'])
+@app.route("/api/surveys/<document>", methods=['GET'])
+def surveys_func_get(document):
     """ 
     GET:
         Builds Documentation
@@ -1095,6 +1094,46 @@ def surveys_func(document):
                 qs.pop('_version_', None)
                 obj['surveys'].append(qs)
             return obj
+
+
+
+@app.route("/api/surveys/", defaults={'document': None}, methods=['POST'])
+@app.route("/api/surveys/<document>", methods=['POST'])
+@login_required
+def surveys_func(document):
+    """ 
+    GET:
+        Builds Documentation
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr  
+    POST:
+        Updates or creates a question.
+
+        Parameters: 
+
+            request (request):  The full request made to a route.
+
+        Returns: 
+            json: JSON results from Solr 
+    PUT
+        Will not be implemented
+    DELETE
+        Not yet implemented
+
+
+
+    ;;field:{"name":"label","type":"string","example":"\\\"LABELPLACEHOLDER\\\"","description":"The survey label."}
+    ;;field:{"name":"resourceid","type":"string","example":"RESOURCEIDPLACEHOLDER","description":"The resource that is associated with this survey."}
+    ;;field:{"name":"id","type":"string","example":"SURVEYIDPLACEHOLDER","description":"The ID of the survey."}
+    ;;gettablefieldnames:["Name","Type","Example","Description"]
+    ;;postjson:{"label": "LABELPLACEHOLDER","resourceid": "RESOURCEIDPLACEHOLDER", "id":"SURVEYIDPLACEHOLDER"}
+    """
+
     if request.method == 'POST':
         content = request.get_json()
         if document=="add":
@@ -2326,6 +2365,7 @@ def login_json():
 
     if request.method == 'POST':
         r_obj=request.get_json()
+        print()
         user_object = get_user(r_obj['username'])
         if user_object:
             computed = user_object['hash']
