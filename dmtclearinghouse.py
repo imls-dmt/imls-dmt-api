@@ -835,8 +835,9 @@ def submit_survey(survey_id):
             elif key!='submitter': 
                 if form_answers[key][0].isdigit():
                     form_answers[key][0]=int(form_answers[key][0])
-                obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}            answers.add(answers_list)
+                obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}            
                 answers_list.append(obj)
+            answers.add(answers_list)
             answers.commit()
             print(json.dumps(answers_list))
 
