@@ -861,6 +861,13 @@ def submit_survey(survey_id):
 
 
 
+@app.route("/api/survey_responses/<outtype>/", methods=['GET'])
+def survey_responses_param(outtype):
+    survey_id=request.args.get('survey_id')
+    if survey_id:
+        return survey_responses(outtype,survey_id)
+    else:
+        return{'status':'error','message':'survey_id must be specified.'}
 
 @app.route("/api/survey_responses/<outtype>/<survey_id>", methods=['GET'])
 def survey_responses(outtype,survey_id):
