@@ -897,11 +897,25 @@ def survey_responses(outtype,survey_id):
                         placeholder[q.docs[0]['id']]={'question_id':q.docs[0]['id'],"label": q.docs[0]['label'],"answers": [],"answers_text": [],"respondent_ids": [],}
                     placeholder[q.docs[0]['id']]['type']=q.docs[0]['element']
                     if q.docs[0]['element']=='select':
+                        max_val=0
+                        min_val=10000000
+                        all_possible=[]
                         for opt in q.docs[0]['options']:
                             obj_json=json.loads(json.dumps(opt).replace("\"", '').replace("'", '"'))
+                            
+                            if int(obj_json['value'])>max_val:
+                                max_val=int(obj_json['value'])
+                            if int(obj_json['value'])<min_val:
+                                min_val=int(obj_json['value'])
+                            if int(obj_json['value']) not in all_possible:
+                                all_possible.append(int(obj_json['value']))
                             if int(obj_json['value'])==int(answer['answer']):
                                 placeholder[q.docs[0]['id']]['answers_text'].append(obj_json['key'])
                         placeholder[q.docs[0]['id']]['answers'].append(int(answer['answer']))
+                        placeholder[q.docs[0]['id']]['max_score']=max_val
+                        placeholder[q.docs[0]['id']]['min_score']=min_val
+                        placeholder[q.docs[0]['id']]['possible_scores']=all_possible
+
                         placeholder[q.docs[0]['id']]['respondent_ids'].append(answer['respondent_id'])
                     else:
                         placeholder[q.docs[0]['id']]['answers'].append(answer['answer'])
