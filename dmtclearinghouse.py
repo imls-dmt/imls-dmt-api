@@ -1177,9 +1177,11 @@ def surveys_func(document):
                     insertobj['label']=content['label']
                     insertobj['question_group_ids']=content['question_group_ids']
                     insertobj['resourceid']=content['resourceid']
+                    newuuid=str(uuid.uuid4())
+                    insertobj['id']=newuuid
                     surveys.add([insertobj])
                     surveys.commit()
-                    return insertobj
+                    return{"status":"success","message":newuuid}
                 elif 'label' in content.keys() and 'question_group_ids' in content.keys() and 'resourceid' in content.keys() and 'id' in content.keys(): #update
                     insertobj['label']=content['label']
                     insertobj['question_group_ids']=content['question_group_ids']
@@ -1316,10 +1318,19 @@ def question_groups_func(document):
                     print("add")
                     insertobj['label']=content['label']
                     insertobj['question_ids']=content['question_ids']
-    
+              
+                    search_str="label:\""+content['label']+'"'
+                    q=question_groups.search(search_str,rows=1)
+                    if len(q.docs)>0:
+                        return{"status":"error","message":"Question Group label \'"+content['label']+"\' already exists."}
+                    
                     question_groups.add([insertobj])
                     question_groups.commit()
-                    return insertobj
+                    q=question_groups.search(search_str,rows=1)
+                    
+                    return{"status":"success","message":str(q.docs[0]['id'])}
+
+                    #return insertobj
                 elif 'label' in content.keys() and 'question_ids' in content.keys() and 'id' in content.keys(): #update
 
                     qg_in_surveys=surveys.search("question_group_ids:"+content['id'])
