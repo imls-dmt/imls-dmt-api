@@ -2047,8 +2047,7 @@ def learning_resources(document):
     return "HEAD"
 
 
-@app.route("/api/routes", methods=['GET'])
-@app.route("/api/routes/", methods=['GET'])
+@app.route("/api/", methods=['GET'])
 def api():
     """ 
     GET:
@@ -2061,12 +2060,13 @@ def api():
     """
     rulelist = []
     not_protected=["/api/vocabularies/","/api/resources/","/api/feedback/","/api/schema/"]
+    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/resource/","/api/surveys/","/api/pub_status/"]
     print(app.url_map)
     for rule in app.url_map.iter_rules():
         print(rule)
         
 
-        if "/api/" in rule.rule:
+        if "/api/" in rule.rule and rule.rule not in exclude_routes:
             if "<" not in rule.rule:
                 if rule.rule != "/api/":
                     if rule.rule+"documentation.html" not in rulelist:
