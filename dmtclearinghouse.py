@@ -622,7 +622,7 @@ def page_not_found(e):
 
 
 # Re-Index from MySQL
-@app.route("/admin/reindex/", methods=['GET'])
+@app.route("/api/admin/reindex/", methods=['GET'])
 @login_required
 def reindex_from_mysql():
     
@@ -630,7 +630,7 @@ def reindex_from_mysql():
     return reindex()
 
 # Unit Tests Route
-@app.route("/admin/tests/", methods=['GET'])
+@app.route("/api/admin/tests/", methods=['GET'])
 @login_required
 def unit_tests():
     # solr_to_mysql()
@@ -1481,7 +1481,7 @@ def addfeedback(document):
 
 # Resource RRS Feed
 
-@app.route('/rss')
+@app.route('/api/rss')
 def rss():
     fg = FeedGenerator()
     fg.title('DMT Clearinghouse')
@@ -1689,6 +1689,7 @@ def learning_resource(document):
 # Resource interaction
 @app.route("/api/resources/", defaults={'document': None}, methods=['GET', 'POST'])
 @app.route("/api/resources/<document>", methods=['GET', 'POST'])
+
 def learning_resources(document):
     """ 
     GET:
@@ -2046,7 +2047,8 @@ def learning_resources(document):
     return "HEAD"
 
 
-@app.route("/api/", methods=['GET'])
+@app.route("/api/routes", methods=['GET'])
+@app.route("/api/routes/", methods=['GET'])
 def api():
     """ 
     GET:
@@ -2190,7 +2192,7 @@ def check_urls():
             print("Error") 
             print(resource["url"]) 
 
-@app.route("/admin/urlcheck/",  methods=['GET'])
+@app.route("/api/admin/urlcheck/",  methods=['GET'])
 def urlcheck():
    
     if current_user.is_authenticated:
@@ -2381,7 +2383,7 @@ def vocabularies(document):
         else:
             return{"status":"error","message":"You must be logged in"},400
 
-@app.route("/login_json", methods=['POST'])
+@app.route("/api/login_json", methods=['POST'])
 def login_json():
     """ 
     POST:
@@ -2412,7 +2414,7 @@ def login_json():
 
 
 
-@app.route("/login/", methods=['GET','POST'])
+@app.route("/api/login/", methods=['GET','POST'])
 def login():
     """ 
     GET:
@@ -2442,20 +2444,20 @@ def login():
 
         return 'Bad login'
 
-@app.route("/logout_json")
+@app.route("/api/logout_json")
 @login_required
 def logout_json():
     logout_user()
     return {"message":"Logged out"}
 
-@app.route("/logout/")
+@app.route("/api/logout/")
 @login_required
 def logout():
     logout_user()
     return redirect("/")
 
 
-@app.route('/protected')
+@app.route('/api/protected')
 @login_required
 def protected():
     return 'Logged in as: ' + current_user.name 
@@ -2512,7 +2514,7 @@ def send_mail(message,subject,isfrom,isto):
         return False
 
 
-@app.route("/passwordreset/", methods=['GET','POST'])
+@app.route("/api/passwordreset/", methods=['GET','POST'])
 def passwordreset():
     yesterday=datetime.now() - timedelta(days=1)
     if request.method == 'GET':
@@ -2560,7 +2562,8 @@ def passwordreset():
 
 
 
-@app.route("/user/groups", methods=['GET'])
+@app.route("/api/user/groups", methods=['GET'])
+
 def user_groups():
     if current_user.is_authenticated:
         jsonobj={'groups':current_user.groups}
@@ -2569,7 +2572,7 @@ def user_groups():
     return jsonobj
 
 
-@app.route("/user/<action>", methods=['GET','POST'])
+@app.route("/api/user/<action>", methods=['GET','POST'])
 def user(action):
     if request.method == 'GET':
         if action=="pwreset":
@@ -2831,7 +2834,7 @@ def user(action):
         else:
             return({"status":"error","message":"no JSON found in post"})
     return("API")
-@app.route("/static/<path:path>")
+@app.route("/api/static/<path:path>")
 def send_static(path):
     return send_from_file('static', path)
 
@@ -2844,7 +2847,7 @@ orcid_redirect_url = app.config["ORCID_REDIRECT_URL"]
 
 orcid_client = WebApplicationClient(orcid_client_id)
 
-@app.route("/orcid_sign_in", methods = ["GET", "POST"])
+@app.route("/api/orcid_sign_in", methods = ["GET", "POST"])
 def orcid_sign_in():
     request_uri = orcid_client.prepare_request_uri(
         orcid_discovery_url,
@@ -2853,7 +2856,7 @@ def orcid_sign_in():
     )
     return redirect(request_uri)
 
-@app.route("/orcid_sign_in/orcid_callback", methods = ["GET", "POST"])
+@app.route("/api/orcid_sign_in/orcid_callback", methods = ["GET", "POST"])
 def orcid_callback():
     
     code = request.args.get("code")
