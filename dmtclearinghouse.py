@@ -2046,7 +2046,7 @@ def learning_resources(document):
     # default return for HEAD
     return "HEAD"
 
-
+@app.route("/api", methods=['GET'])
 @app.route("/api/", methods=['GET'])
 def api():
     """ 
