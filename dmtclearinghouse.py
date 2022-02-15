@@ -23,7 +23,7 @@ from requests_oauthlib import OAuth2Session
 from feedgen.feed import FeedGenerator
 import sys
 from flask_cors import CORS
-
+import copy
 
 from flask.sessions import SecureCookieSessionInterface
 
@@ -270,28 +270,63 @@ def normalize_result(result, template):
             template[key] = result[key]
     return template
 
+def addFacets(j):
+    r = requests.get(app.config["SOLR_ADDRESS"] +"learningresources/schema?wt=json")
+    if r.json():
+        for field in r.json()['schema']['fields']:
+            if field['name'].startswith(('facet_')):
+                non_facet_key=field['name'][len('facet_'):]
+                if non_facet_key in j:
+                    j[field['name']]=j[non_facet_key]
+               
+    
+    return j
+
+
+
+
+
 def insert_new_resource(j):
+
 
     j['creator']=current_user.name
     j=UpdateFacets(j)
     j['id']=str(uuid.uuid4())
     j['pub_status']="in-process"
-    db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
+    now_str=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    #j['resource_modification_date']=now_str
+    j['modification_date']=now_str
+    j['created']=now_str
+    j['published']=now_str
+    j['rating']=0.0
+    j['status']=0
+    
+    user_info = users.search("id:\""+current_user.id+"\"", rows=1)
+    j['submitter_email']=user_info.docs[0]['email']
+    j['submitter_name']=user_info.docs[0]['name']
+
+    j2 = copy.deepcopy(j)
+    j=addFacets(j)
+
+    
+    # db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
     try:
+        db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
+   
+        x=resources.add([j])
+
+        test = resources.commit()
+
         db.session.commit()
+    
+        add_timestamp(j['id'],"add new resource",current_user,request)
+        return({"status":"success","doc":j2})
     except Exception as err:
         db.session.rollback()
         db.session.flush()
         return({"status":"fail","error":str(err)})
-    try:
-        resources.add([j])
-        test = resources.commit()
-        add_timestamp(j['id'],"submit",current_user,request)
-    except Exception as solrerr:
-        db_session.rollback()
-        db_session.flush()
-        return({"status":"fail","error":str(solrerr)})
-    return({"status":"success","error":None})
+
+    
 
 
 def UpdateFacets(j):
@@ -324,6 +359,8 @@ def update_resource(j):
         if status ==['in-review','in-process'] and current_status =='in-process':
             can_edit=True
     if can_edit:
+   
+        j['modification_date']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
 
         j=UpdateFacets(j)
@@ -340,7 +377,7 @@ def update_resource(j):
             return({"status":"fail","error":str(err)})
     else:
         return{"status":"error","message":"You do not have permisson to set pub_status to "+status},400
-    return({"status":"success","error":None})
+    return({"status":"success","doc":j})
 
 def get_score(results,uuid):
     score=None
@@ -560,7 +597,32 @@ def temlate_doc(collection_name):
                 else:
                     template[field['name']] = []
     return template
-# Documentation generation
+
+
+def resource_metadata(collection_name):
+    """
+    Internal function for building template doc from schema.
+    Parameters: 
+
+        collection_name (str): name of a collection.
+
+    Returns:
+        json document
+    """
+    template = json.loads("{}")
+    r = requests.get(app.config["SOLR_ADDRESS"] +
+                     collection_name+"/schema?wt=json")
+    if r.json():
+        for field in r.json()['schema']['fields']:
+            if not field['name'].startswith(('_', 'facet_')):
+                if 'multiValued' in field.keys():
+                    if field['multiValued']:
+                        template[field['name']] = []
+                    else:
+                        template[field['name']] = None
+                else:
+                    template[field['name']] = []
+    return template
 
 
 def generate_documentation(docstring, document, request, jsonexample=False):
@@ -1521,8 +1583,8 @@ def rss():
     return response
 
 # Resource interaction
-@app.route("/api/resource/", defaults={'document': None}, methods=['POST'])
-@app.route("/api/resource/<document>", methods=['GET', 'POST'])
+@app.route("/api/resource/", defaults={'document': None}, methods=['PUT','POST','DELETE'])
+
 @login_required
 def learning_resource_post(document):
     """ 
@@ -1551,37 +1613,44 @@ def learning_resource_post(document):
 
 
 
-    ;;field:{"name":"template","type":"","example":"template","description":"Generate empty resource from schema"}
+    ;;field:{"name":"template","type":"","example":"true","description":"Generate empty resource from schema."}
+    ;;field:{"name":"metadata","type":"","example":"true","description":"Generate metadata for all resource fields."}
     ;;field:{"name":"id","type":"string","example":"IDPLACEHOLDER","description":"The ID of the learning resource."}
     ;;gettablefieldnames:["Name","Type","Example","Description"]
     ;;postjson:"""
 
     if request.method == 'POST':
-
         if request.is_json:
             content = request.get_json()
-            template = temlate_doc('learningresources')
-            
             if 'id' not in content or content['id']=="": #treat as if it is a new document
                     return insert_new_resource(content)
-            else: #treat as existing
-                    return update_resource(content)
-                    
-                
-
-    if request.method == 'GET':
-        if document is not None:
-            allowed_documents = ['documentation.html',
-                                 'documentation.md', 'documentation.htm']
-            if document not in allowed_documents:
-                return render_template('bad_document.html', example="documentation.html"), 400
             else:
-                this_docstring = learning_resource_post.__doc__ + \
-                    json.dumps(temlate_doc('learningresources'))
-                result1 = resources.search("*:*", rows=1)
-                id = result1.docs[0]["id"]
-                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
-                return generate_documentation(this_docstring, document, request, True)
+                return {'status':'error','message':"New documents cannot have an 'id' key."} 
+                   # return update_resource(content)
+        else:
+            return {'status':'error','message':'POST must have a JSON body'}
+
+    if request.method == 'PUT':
+        if request.is_json:
+            content = request.get_json()
+            if 'id' not in content or content['id']=="": #treat as if it is a new document
+                return {'status':'error','message':'Existing documents must have an "id" key.'} 
+            else:
+               return update_resource(content)
+        else:
+            return {'status':'error','message':'POST must have a JSON body'}
+
+                
+    if request.method == 'DELETE':
+        content = request.get_json()
+        if 'id' in content.keys(): 
+            q='id:'+content['id']
+            resources.delete(q=q)
+            resources.commit()
+            return {'status':'success','message':'id:'+content['id']+" removed."}
+        else:
+            return {'status':'error','message':'JSON body must have an "id" key to delete.'}
+
 
     return "Documentation not implemented."
 
@@ -1661,9 +1730,12 @@ def pub_status(status):
 
 
 @app.route("/api/resource/", defaults={'document': None}, methods=['GET'])
+@app.route("/api/resource/<document>", methods=[ 'GET'])
 def learning_resource(document):
     if request.method == "GET":
+        print('get')
         if document is None:
+            print(request.args.get('metadata'))
             if request.args.get('id'):
                 if current_user.is_authenticated:
                     if "admin" in current_user.groups:
@@ -1678,12 +1750,141 @@ def learning_resource(document):
                 if len(results.docs) > 0:
                     normalized_content = normalize_result(
                         results.docs[0], template)
-                    return "test"#normalized_content
+                    return normalized_content
                 else:
                     return "No results found"
+            elif request.args.get('template'):
+                
+                template = temlate_doc('learningresources')
+                response = app.response_class(
+                response=json.dumps(template),
+                status=200,
+                mimetype='application/json')
+                return response
+            elif request.args.get('metadata'):
+                print('metadata')
+                textarea=['abstract_data','citation']
+                text=['title','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type"]
+                dates=['resource_modification_date']
+                checkbox=['access_cost']
+                email=['contact.email']
+                facet_field=['author_org.name','subject','keywords','license','usage_info','publisher','accessibility_features.name','language_primary','languages_secondary','ed_frameworks.name','author_names','ed_frameworks.nodes.name','target_audience','lr_type','purpose','media_type','access_cost']
+                auto_gen=['authors.familyName','authors.givenName']
+                select=['completion_time']
+                url=['url']
+                r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
+                facet_json=r.json()
+                return_json={}
+                template = temlate_doc('learningresources')
+                for key in template:
+                    if key in textarea:
+                        return_json[key]={
+                        "label": key.replace("_"," ").replace("."," ").title(),
+                        "name": key,
+                        "element": "textarea"
+                        }
+                    if key in checkbox:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type": "checkbox"
+                        }
+                    if key in facet_field:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element":"datalist",
+                    
+                        "facet":key,
+                        "taxonomy":False
+                    }
+                    if key in text:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type": "text"
+                        }
+
+                    if key in dates:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type": "date"
+                        }
+                    if key in select:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element":"select",
+                            "taxonomy":True
+                        }
+                    if key in email:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type": "email"
+                        }
+                    if key in url:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type": "url"
+                        }
+                for key in return_json:
+                    if 'facet' in return_json[key]:
+                        fac=return_json[key]['facet']
+                        return_json[key]['options']=[]
+                        for new_key in facet_json["facets"][fac]:
+                            return_json[key]['options'].append({"key": new_key, "value": new_key})
+                
+                        # print(r.json())
+                       
+
+                        
+# api/resources/?limit=1&facet_limit=-1
+
+
+
+                response = app.response_class(
+                response=json.dumps(return_json),
+                status=200,
+                mimetype='application/json')
+                return response
+        if document is not None:
+            print('not none')
+            allowed_documents = ['documentation.html',
+                                    'documentation.md', 'documentation.htm','template','metadata']
+            if document not in allowed_documents:
+                return render_template('bad_document.html', example="documentation.html"), 400
+            elif document=='template':
+                template = temlate_doc('learningresources')
+                response = app.response_class(
+                response=json.dumps(template),
+                status=200,
+                mimetype='application/json')
+                return response
+            elif document=='metadata':
+                template = temlate_doc('learningresources')
+                response = app.response_class(
+                response=json.dumps(template),
+                status=200,
+                mimetype='application/json')
+                return response
             else:
-                return render_template('resource.json')
-    return "Documentation not implemented."
+                this_docstring = learning_resource_post.__doc__ + \
+                    json.dumps(temlate_doc('learningresources'))
+                result1 = resources.search("*:*", rows=1)
+                id = result1.docs[0]["id"]
+                this_docstring = this_docstring.replace('IDPLACEHOLDER', id)
+                return generate_documentation(this_docstring, document, request, True)
+      
+
+
+
 
 
 # Resource interaction
@@ -2060,20 +2261,22 @@ def api():
     """
     rulelist = []
     not_protected=["/api/vocabularies/","/api/resources/","/api/feedback/","/api/schema/"]
-    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/resource/","/api/surveys/","/api/pub_status/"]
+    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/surveys/","/api/pub_status/"]
     print(app.url_map)
     for rule in app.url_map.iter_rules():
         print(rule)
         
-
+        
         if "/api/" in rule.rule and rule.rule not in exclude_routes:
             if "<" not in rule.rule:
                 if rule.rule != "/api/":
                     if rule.rule+"documentation.html" not in rulelist:
                         if rule.rule in not_protected:
-                            rulelist.append(rule.rule+"documentation.html")
+                            if rule.rule+"documentation.html" not in rulelist:
+                                rulelist.append(rule.rule+"documentation.html")
                         else:
-                            rulelist.append(rule.rule+"documentation.html (protected)")
+                            if rule.rule+"documentation.html (protected)" not in rulelist:
+                                rulelist.append(rule.rule+"documentation.html (protected)")
         
     return render_template('api.html', rulelist=rulelist)
 
