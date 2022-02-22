@@ -1952,7 +1952,7 @@ def learning_resource(document):
                                     for value in result['values']:
                                         return_json[key]['options'].append({"key": value, "value": value})
                 f = open('/opt/DMTClearinghouse/extras/countries.json')
-                countries=json.load(f)
+                countries=json.load(f, encoding='utf-8')
                 return_json["country_of_origin"]= {
                 "label": "Country of Origin",
                 "name": "country_of_origin",
