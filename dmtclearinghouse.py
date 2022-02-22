@@ -72,7 +72,7 @@ class Tokens(db.Model):
 
 
 
-resources_facets = ["facet_author_org.name", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
+resources_facets = ["facet_authors.givenName","facet_authors.familyName","facet_author_org.name", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
                     "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks.name","facet_author_names", "facet_ed_frameworks.nodes.name", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type","facet_access_cost"]
 # Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(
@@ -1762,34 +1762,109 @@ def learning_resource(document):
                 mimetype='application/json')
                 return response
             elif request.args.get('metadata'):
-                print('metadata')
-                textarea=['abstract_data','citation']
-                text=['title','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type"]
+                print('title')
+                field_sets=[{'fields':[], 'name':'General','contains':[]},
+                {'fields':[], 'name':'Access Constraints','contains':['access_cost']},
+                {'fields':[], 'name':'Accessibility','contains':['accessibility_summary','accessibility_features.name']},
+                {'fields':[], 'name':'Author(s)','contains':['author_names', 'authors.familyName', 'authors.givenName', 'author_org.name','author_org.name_identifier', 'author_org.name_identifier_type','authors.name_identifier', 'authors.name_identifier_type']},
+                {'fields':[], 'name':'Resource Contact','contains':['contact.org', 'contact.name', 'contact.email']},
+                {'fields':[], 'name':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type']},
+                {'fields':[], 'name':'MD Record','contains':[]},
+                {'fields':[], 'name':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
+                {'fields':[], 'name':'Access Conditions','contains':['license']},
+                {'fields':[], 'name':'Resource Location','contains':['locator_data','locator_type']},
+                ]
+
+#[, 'abstract_data', 'citation', , , , 'name_identifier',  , 'title', , , , 'resource_modification_date', , 'usage_info', 'publisher', 
+#'language_primary', 'languages_secondary', 'media_type', 'keywords', 
+# 'credential_status', 'completion_time'']
+
+                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','locator_data','name_identifier']
+                text=['locator_type','contributors.familyName','contributors.givenName','title','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type","contributor_orgs.name"]
                 dates=['resource_modification_date']
-                checkbox=['access_cost']
+                yn_select=['access_cost']
                 email=['contact.email']
-                facet_field=['author_org.name','subject','keywords','license','usage_info','publisher','accessibility_features.name','language_primary','languages_secondary','ed_frameworks.name','author_names','ed_frameworks.nodes.name','target_audience','lr_type','purpose','media_type','access_cost']
-                auto_gen=['authors.familyName','authors.givenName']
-                select=['completion_time']
+                
+                facet_checkbox=['accessibility_features.name']
+                facet_field=['subject','license','usage_info','language_primary','languages_secondary','lr_type','purpose','media_type']
+                flexdatalist=['author_org.name','keywords','publisher','ed_frameworks.name','author_names','ed_frameworks.nodes.name','target_audience','authors.familyName','authors.givenName']
+                yes_no_unknown=["credential_status"]
+              
+                # auto_gen=['authors.familyName','authors.givenName'] created
+                completion_time=['completion_time']
+                taxonomy_field=['contributor_orgs.type','contributors.type']
+                taxonomy_keys={'contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types'}
                 url=['url']
                 r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
                 facet_json=r.json()
+                r2=requests.get(request.host_url+'/api/vocabularies/')
+                print(r2)
+                vocabularies_json=r2.json()
+                
                 return_json={}
                 template = temlate_doc('learningresources')
+
                 for key in template:
+                    if key in yes_no_unknown:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type":"checkbox",
+                            "options": [{
+                                    "key": "Yes",
+                                    "value": "Yes",
+                                    "checked":False
+                                    },{
+                                    "key": "No",
+                                    "value": "No",
+                                     "checked":True
+                                    },{
+                                    "key": "unknown",
+                                    "value": "unknown",
+                                     "checked":False
+                                    }
+                                    
+                                    ]
+                        }
+                    if key in taxonomy_field:
+                        return_json[key]={
+                        "label": key.replace("_"," ").replace("."," ").title(),
+                        "name": key,
+                        "element": "datalist",
+                        "taxonomy":True
+                        }
+
                     if key in textarea:
                         return_json[key]={
                         "label": key.replace("_"," ").replace("."," ").title(),
                         "name": key,
                         "element": "textarea"
                         }
-                    if key in checkbox:
+                    if key in yn_select:
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
                             "name": key,
-                            "element": "input",
-                            "input_type": "checkbox"
+                            "element": "select",
+                            "options": [{
+                                    "key": "Yes",
+                                    "value": True
+                                    },
+                                    {
+                                    "key": "No",
+                                    "value": False
+                                    }]
                         }
+
+                    if key in facet_checkbox:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element": "input",
+                        "facet":key,
+                        "input_type":"checkbox"
+                    }
+
+
                     if key in facet_field:
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
@@ -1798,6 +1873,18 @@ def learning_resource(document):
                         "facet":key,
                         "taxonomy":False
                     }
+
+                    if key in flexdatalist:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element":"flexdatalist",
+                    
+                        "facet":key,
+                        "taxonomy":False
+                    }
+
+
+
                     if key in text:
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
@@ -1813,12 +1900,19 @@ def learning_resource(document):
                             "element": "input",
                             "input_type": "date"
                         }
-                    if key in select:
+                    if key in completion_time:
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
                             "name": key,
                             "element":"select",
-                            "taxonomy":True
+                            "options": [{
+                                    "key":"Up to 1 hour",
+                                    "value":"Up to 1 hour"
+                                    },
+                                    {
+                                    "key":"More than 1 hour (but less than 1 day)",
+                                    "value":"More than 1 hour (but less than 1 day)"
+                                    }]
                         }
                     if key in email:
                         return_json[key]={
@@ -1836,11 +1930,46 @@ def learning_resource(document):
                         }
                 for key in return_json:
                     if 'facet' in return_json[key]:
-                        fac=return_json[key]['facet']
-                        return_json[key]['options']=[]
-                        for new_key in facet_json["facets"][fac]:
-                            return_json[key]['options'].append({"key": new_key, "value": new_key})
+                        if 'input_type' in return_json[key]:
+                            if return_json[key]['input_type']=='checkbox':
+                                print('checkbox')
+                                fac=return_json[key]['facet']
+                                return_json[key]['options']=[]
+                                for new_key in facet_json["facets"][fac]:
+                                    return_json[key]['options'].append({"key": new_key, "value": new_key})
+                        else:
+                            fac=return_json[key]['facet']
+                            return_json[key]['options']=[]
+                            for new_key in facet_json["facets"][fac]:
+                                return_json[key]['options'].append({"key": new_key, "value": new_key})
+                    if 'taxonomy' in return_json[key]:
+                        if return_json[key]['taxonomy']:
+                            vocab_name=taxonomy_keys[return_json[key]['name']]
+                            print(vocab_name)
+                            for result in  vocabularies_json['results']:
+                                if result['name']==vocab_name:
+                                    return_json[key]['options']=[]
+                                    for value in result['values']:
+                                        return_json[key]['options'].append({"key": value, "value": value})
+                f = open('extras/countries.json')
+                countries=json.load(f)
+                return_json["country_of_origin"]= {
+                "label": "Country of Origin",
+                "name": "country_of_origin",
+                "element": "datalist",
+                "options":countries               
+                }
                 
+                new_return_json={}
+                for key in return_json:
+                    key_general=True
+                    for field_set_obj in field_sets:
+                        if key in field_set_obj['contains']:
+                            key_general=False
+                            field_set_obj['fields'].append(return_json[key])
+                    if key_general:
+                        field_sets[0]['fields'].append(return_json[key])
+
                         # print(r.json())
                        
 
@@ -1850,7 +1979,7 @@ def learning_resource(document):
 
 
                 response = app.response_class(
-                response=json.dumps(return_json),
+                response=json.dumps(field_sets),
                 status=200,
                 mimetype='application/json')
                 return response
