@@ -1763,16 +1763,16 @@ def learning_resource(document):
                 return response
             elif request.args.get('metadata'):
                 print('title')
-                field_sets=[{'fields':[], 'name':'General','contains':[]},
-                {'fields':[], 'name':'Access Constraints','contains':['access_cost']},
-                {'fields':[], 'name':'Accessibility','contains':['accessibility_summary','accessibility_features.name']},
-                {'fields':[], 'name':'Author(s)','contains':['author_names', 'authors.familyName', 'authors.givenName', 'author_org.name','author_org.name_identifier', 'author_org.name_identifier_type','authors.name_identifier', 'authors.name_identifier_type']},
-                {'fields':[], 'name':'Resource Contact','contains':['contact.org', 'contact.name', 'contact.email']},
-                {'fields':[], 'name':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type']},
-                {'fields':[], 'name':'MD Record','contains':[]},
-                {'fields':[], 'name':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
-                {'fields':[], 'name':'Access Conditions','contains':['license']},
-                {'fields':[], 'name':'Resource Location','contains':['locator_data','locator_type']},
+                field_sets=[{'fields':[], 'name':'general','label':'General','contains':[]},
+                {'fields':[], 'name':'access_constraints','label':'Access Constraints','contains':['access_cost']},
+                {'fields':[], 'name':'accessibility','label':'Accessibility','contains':['accessibility_summary','accessibility_features.name']},
+                {'fields':[], 'name':'authors','label':'Author(s)','contains':['author_names', 'authors.familyName', 'authors.givenName', 'author_org.name','author_org.name_identifier', 'author_org.name_identifier_type','authors.name_identifier', 'authors.name_identifier_type']},
+                {'fields':[], 'name':'resource_contact','label':'Resource Contact','contains':['contact.org', 'contact.name', 'contact.email']},
+                {'fields':[], 'name':'contributors','label':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type']},
+                {'fields':[], 'name':'md_record','label':'MD Record','contains':[]},
+                {'fields':[], 'name':'educational_information','label':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
+                {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license']},
+                {'fields':[], 'name':'resource_location','label':'Resource Location','contains':['locator_data','locator_type']},
                 ]
 
 #[, 'abstract_data', 'citation', , , , 'name_identifier',  , 'title', , , , 'resource_modification_date', , 'usage_info', 'publisher', 
@@ -1969,6 +1969,7 @@ def learning_resource(document):
                             field_set_obj['fields'].append(return_json[key])
                     if key_general:
                         field_sets[0]['fields'].append(return_json[key])
+                        field_sets[0]['contains'].append(key)
 
                         # print(r.json())
                        
