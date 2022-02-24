@@ -1780,10 +1780,10 @@ def learning_resource(document):
 # 'credential_status', 'completion_time'']
 
                 textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','locator_data','name_identifier']
-                text=['locator_type','contributors.familyName','contributors.givenName','title','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type","contributor_orgs.name"]
+                text=['locator_type','contributors.familyName','contributors.givenName','title','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type","contributor_orgs.name","submitter_name"]
                 dates=['resource_modification_date']
                 yn_select=['access_cost']
-                email=['contact.email']
+                email=['contact.email','submitter_email']
                 
                 facet_checkbox=['accessibility_features.name']
                 facet_field=['subject','license','usage_info','language_primary','languages_secondary','lr_type','purpose','media_type']
