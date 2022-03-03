@@ -1780,7 +1780,9 @@ def learning_resource(document):
 # 'credential_status', 'completion_time'']
 
                 textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','locator_data','name_identifier','title']
-                text=['locator_type','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type","contributor_orgs.name","submitter_name"]
+                text=['locator_type','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name","submitter_name"]
+                user_identifier=["authors.name_identifier_type"]
+                org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
                 yn_select=['access_cost']
                 email=['contact.email','submitter_email']
@@ -1806,8 +1808,35 @@ def learning_resource(document):
                 
                 return_json={}
                 template = temlate_doc('learningresources')
-
                 for key in template:
+                    if key in user_identifier:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type":"select",
+                            "options": [
+                                {"key": "arXiv Author ID","value": "arXiv Author ID"},
+                                {"key": "Google Scholar Profiles","value": "Google Scholar Profiles"},
+                                {"key": "LinkedIn","value": "LinkedIn"},
+                                {"key": "ORCID iD","value": "ORCID iD"},
+                                {"key": "ResearcherID","value": "ResearcherID"},
+                                    ]
+                        }
+
+                    if key in org_identifier:
+                        return_json[key]={
+                            "label": key.replace("_"," ").replace("."," ").title(),
+                            "name": key,
+                            "element": "input",
+                            "input_type":"select",
+                            "options": [
+                                {"key": "GRID","value": "GRID"},
+                                {"key": "ISNI","value": "ISNI"},
+                                {"key": "Ringgold","value": "Ringgold"},
+                                {"key": "ROR","value": "ROR"},
+                                    ]
+                        }
                     if key in yes_no_unknown:
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
@@ -1836,7 +1865,7 @@ def learning_resource(document):
                         "element": "select",
                         "name":key,
                         "taxonomy":True,
-                        "attribute": "multiple"
+                        "attribute": ["multiple"]
                         }
                     if key in taxonomy_field:
                         return_json[key]={
@@ -1898,7 +1927,7 @@ def learning_resource(document):
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element":"select",
-                        "attribute": "single",
+                        "attribute": ["single"],
                         "name":key,
                         "facet":key,
                         "taxonomy":False
