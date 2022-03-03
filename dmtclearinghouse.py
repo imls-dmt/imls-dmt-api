@@ -1779,21 +1779,24 @@ def learning_resource(document):
 #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
 # 'credential_status', 'completion_time'']
 
-                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','locator_data','name_identifier']
-                text=['locator_type','contributors.familyName','contributors.givenName','title','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type","contributor_orgs.name","submitter_name"]
+                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','locator_data','name_identifier','title']
+                text=['locator_type','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier','author_org.name_identifier_type',"authors.name_identifier","authors.name_identifier_type","contributor_orgs.name","submitter_name"]
                 dates=['resource_modification_date']
                 yn_select=['access_cost']
                 email=['contact.email','submitter_email']
-                
-                facet_checkbox=['accessibility_features.name']
+                select_multiple_facet=["accessibility_features.name"]
+                select_multiple_taxonomy=[]
+                facet_checkbox=[]
                 facet_field=['subject','license','usage_info','language_primary','languages_secondary','lr_type','purpose','media_type']
-                flexdatalist=['author_org.name','keywords','publisher','ed_frameworks.name','author_names','ed_frameworks.nodes.name','target_audience','authors.familyName','authors.givenName']
+                flexdatalist=['author_org.name','keywords','publisher','ed_frameworks.name','author_names','target_audience','authors.familyName','authors.givenName']
+                select_single_taxonomy=['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
               
                 # auto_gen=['authors.familyName','authors.givenName'] created
                 completion_time=['completion_time']
                 taxonomy_field=['contributor_orgs.type','contributors.type']
-                taxonomy_keys={'contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types'}
+                
+                taxonomy_keys={'contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
                 facet_json=r.json()
@@ -1826,6 +1829,14 @@ def learning_resource(document):
                                     }
                                     
                                     ]
+                        }
+                    if key in select_multiple_facet:
+                        return_json[key]={
+                        "label": key.replace("_"," ").replace("."," ").title(),
+                        "element": "select",
+                        "name":key,
+                        "taxonomy":True,
+                        "attribute": "multiple"
                         }
                     if key in taxonomy_field:
                         return_json[key]={
@@ -1861,6 +1872,7 @@ def learning_resource(document):
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element": "input",
                         "facet":key,
+                        "name":key,
                         "input_type":"checkbox"
                     }
 
@@ -1869,7 +1881,7 @@ def learning_resource(document):
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element":"datalist",
-                    
+                        "name":key,
                         "facet":key,
                         "taxonomy":False
                     }
@@ -1878,10 +1890,19 @@ def learning_resource(document):
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element":"flexdatalist",
-                    
+                        "name":key,
                         "facet":key,
                         "taxonomy":False
                     }
+                    if key in select_single_taxonomy:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element":"select",
+                        "attribute": "single",
+                        "name":key,
+                        "facet":key,
+                        "taxonomy":False
+                        }
 
 
 
@@ -1944,6 +1965,8 @@ def learning_resource(document):
                                 return_json[key]['options'].append({"key": new_key, "value": new_key})
                     if 'taxonomy' in return_json[key]:
                         if return_json[key]['taxonomy']:
+                            print(key)
+                            print(taxonomy_keys)
                             vocab_name=taxonomy_keys[return_json[key]['name']]
                             print(vocab_name)
                             for result in  vocabularies_json['results']:
@@ -1962,6 +1985,7 @@ def learning_resource(document):
                 
                 new_return_json={}
                 for key in return_json:
+                    return_json[key]['name']=return_json[key]['name'].replace(".", "__")
                     key_general=True
                     for field_set_obj in field_sets:
                         if key in field_set_obj['contains']:
