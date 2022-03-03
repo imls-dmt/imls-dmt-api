@@ -48,18 +48,18 @@ os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c users"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c users -n data_driven_schema_configs"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c taxonomies"')
 os.system('sudo su - solr -c "/opt/solr/bin/solr create -c taxonomies -n data_driven_schema_configs"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c timestamps"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr create -c timestamps -n data_driven_schema_configs"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c feedback"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr create -c feedback -n data_driven_schema_configs"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c questions"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr create -c questions -n data_driven_schema_configs"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c question_groups"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr create -c question_groups -n data_driven_schema_configs"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c surveys"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr create -c surveys -n data_driven_schema_configs"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c answers"')
-os.system('sudo su - solr -c "/opt/solr/bin/solr create -c answers -n data_driven_schema_configs"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c timestamps"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr create -c timestamps -n data_driven_schema_configs"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c feedback"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr create -c feedback -n data_driven_schema_configs"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c questions"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr create -c questions -n data_driven_schema_configs"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c question_groups"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr create -c question_groups -n data_driven_schema_configs"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c surveys"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr create -c surveys -n data_driven_schema_configs"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr delete -c answers"')
+# os.system('sudo su - solr -c "/opt/solr/bin/solr create -c answers -n data_driven_schema_configs"')
 r=requests.get("http://localhost:8983/solr/users/update?commit=true")
 
 print("Add Learning Resources fields")
@@ -86,8 +86,8 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"citation", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"publisher", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"version", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"created", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"published", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"created", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
+ '{"add-field": {"name":"published", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
  '{"add-field": {"name":"ed_frameworks.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"ed_frameworks.nodes.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"ed_frameworks.nodes.description", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -109,8 +109,8 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"locator_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"country_of_origin", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"credential_status", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"resource_modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"resource_modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
+ '{"add-field": {"name":"modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
  '{"add-field": {"name":"name_identifier", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"name_identifier_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"accessibility_features.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -138,7 +138,10 @@ facet_fields=[
  '{"add-field": {"name":"facet_lr_type", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_purpose", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_media_type", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
- '{"add-field": {"name":"facet_access_cost", "type":"boolean", "multiValued":false, "stored":true,"required":false ,"indexed":true}}']
+ '{"add-field": {"name":"facet_access_cost", "type":"boolean", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
+ '{"add-field": {"name":"facet_completion_time", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"facet_authors.familyName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"facet_authors.givenName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',]
 
 timestamp_fields=[
  '{"add-field": {"name":"ip", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -182,66 +185,66 @@ answers_fields=[
  ]
 
 
-for field in answers_fields:
-    j=json.loads(field)
-    # print(j)
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url="http://localhost:8983/solr/answers/schema"
-    r = requests.post(url, data=json.dumps(j), headers=headers)
-    if r.status_code!=200:
-        print(r.json())
-        print(r.text)
+# for field in answers_fields:
+#     j=json.loads(field)
+#     # print(j)
+#     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+#     url="http://localhost:8983/solr/answers/schema"
+#     r = requests.post(url, data=json.dumps(j), headers=headers)
+#     if r.status_code!=200:
+#         print(r.json())
+#         print(r.text)
 
-for field in surveys_fields:
-    j=json.loads(field)
-    # print(j)
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url="http://localhost:8983/solr/surveys/schema"
-    r = requests.post(url, data=json.dumps(j), headers=headers)
-    if r.status_code!=200:
-        print(r.json())
-        print(r.text)
+# for field in surveys_fields:
+#     j=json.loads(field)
+#     # print(j)
+#     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+#     url="http://localhost:8983/solr/surveys/schema"
+#     r = requests.post(url, data=json.dumps(j), headers=headers)
+#     if r.status_code!=200:
+#         print(r.json())
+#         print(r.text)
 
-for field in question_group_fields:
-    j=json.loads(field)
-    # print(j)
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url="http://localhost:8983/solr/question_groups/schema"
-    r = requests.post(url, data=json.dumps(j), headers=headers)
-    if r.status_code!=200:
-        print(r.json())
-        print(r.text)
+# for field in question_group_fields:
+#     j=json.loads(field)
+#     # print(j)
+#     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+#     url="http://localhost:8983/solr/question_groups/schema"
+#     r = requests.post(url, data=json.dumps(j), headers=headers)
+#     if r.status_code!=200:
+#         print(r.json())
+#         print(r.text)
 
-for field in question_fields:
-    print(field)
-    j=json.loads(field)
-    # print(j)
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url="http://localhost:8983/solr/questions/schema"
-    r = requests.post(url, data=json.dumps(j), headers=headers)
-    if r.status_code!=200:
-        print(r.json())
-        print(r.text)
+# for field in question_fields:
+#     print(field)
+#     j=json.loads(field)
+#     # print(j)
+#     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+#     url="http://localhost:8983/solr/questions/schema"
+#     r = requests.post(url, data=json.dumps(j), headers=headers)
+#     if r.status_code!=200:
+#         print(r.json())
+#         print(r.text)
 
-for field in feedback_fields:
-    j=json.loads(field)
-    # print(j)
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url="http://localhost:8983/solr/feedback/schema"
-    r = requests.post(url, data=json.dumps(j), headers=headers)
-    if r.status_code!=200:
-        print(r.json())
-        print(r.text)
+# for field in feedback_fields:
+#     j=json.loads(field)
+#     # print(j)
+#     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+#     url="http://localhost:8983/solr/feedback/schema"
+#     r = requests.post(url, data=json.dumps(j), headers=headers)
+#     if r.status_code!=200:
+#         print(r.json())
+#         print(r.text)
 
-for field in timestamp_fields:
-    j=json.loads(field)
-    # print(j)
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    url="http://localhost:8983/solr/timestamps/schema"
-    r = requests.post(url, data=json.dumps(j), headers=headers)
-    if r.status_code!=200:
-        print(r.json())
-        print(r.text)
+# for field in timestamp_fields:
+#     j=json.loads(field)
+#     # print(j)
+#     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+#     url="http://localhost:8983/solr/timestamps/schema"
+#     r = requests.post(url, data=json.dumps(j), headers=headers)
+#     if r.status_code!=200:
+#         print(r.json())
+#         print(r.text)
 
 for field in fields:
     j=json.loads(field)
@@ -605,12 +608,14 @@ for lr in Learning_Resources:
         j['pub_status']='published'
 
     j['modification_date']=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    j['resource_modification_date']="1900-01-01T00:00:00Z"
     j['url']=get_value(LRUrls.field_lr_url_url,LRUrls)
     j['access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
     j['facet_access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
     j['submitter_name']=get_value(Submitter.field_dmt_submitter_name_value,Submitter)
     j['submitter_email']=get_value(SubmitterEmail.field_submission_contact_email_a_email,SubmitterEmail)
     j['authors']=build_authors(Authorid.field_lr_author_people_target_id,Authorid)
+    j['facet_authors']=build_authors(Authorid.field_lr_author_people_target_id,Authorid)
     j['author_names']=build_author_names(Authorid.field_lr_author_people_target_id,Authorid)
     j['facet_author_names']=build_author_names(Authorid.field_lr_author_people_target_id,Authorid)
     j['author_org']={"name":get_value_from_target(AuthorOrg.field_lr_author_organizations_target_id,AuthorOrg),"name_identifier":"","name_identifier_type":""}
@@ -634,8 +639,12 @@ for lr in Learning_Resources:
     j['publisher']=get_value_from_target(Publisher.field_lr_publisher_target_id,Publisher)
     j['facet_publisher']=get_value_from_target(Publisher.field_lr_publisher_target_id,Publisher)
     j['version']=get_value(Version.field_lr_version_value,Version)
-    j['created']=get_date(DateCreated.field_lr_date_created_value,DateCreated)
-    j['published']=get_date(DatePublished.field_lr_date_published_value,DatePublished)
+    c_date=get_date(DateCreated.field_lr_date_created_value,DateCreated)
+    print(c_date)
+    j['created']=c_date
+    p_date=get_date(DatePublished.field_lr_date_published_value,DatePublished)
+    print(p_date)
+    j['published']=p_date
     accessibility_features=build_accessibility_features(AccessFeatures.field_lr_access_features_target_id,AccessFeatures)
     j['accessibility_features']=accessibility_features
     j['facet_accessibility_features']=accessibility_features
@@ -651,6 +660,7 @@ for lr in Learning_Resources:
     j['purpose']=get_value_from_target(Purpose.field_lr_ed_purpose_target_id,Purpose)
     j['facet_purpose']=get_value_from_target(Purpose.field_lr_ed_purpose_target_id,Purpose)
     j['completion_time']=get_value_from_target(CompletionTime.field_lr_completion_time_target_id,CompletionTime)
+    j['facet_completion_time']=get_value_from_target(CompletionTime.field_lr_completion_time_target_id,CompletionTime)
     j['media_type']=get_value_from_target(MediaType.field_lr_media_type_target_id,MediaType)
     j['facet_media_type']=get_value_from_target(MediaType.field_lr_media_type_target_id,MediaType)
     j['lr_type']=get_value_from_target(LearningResourceType.field_lr_type_target_id,LearningResourceType)
