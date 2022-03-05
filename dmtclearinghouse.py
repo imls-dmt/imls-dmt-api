@@ -1813,8 +1813,7 @@ def learning_resource(document):
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
                             "name": key,
-                            "element": "input",
-                            "input_type":"select",
+                            "element": "select",
                             "options": [
                                 {"key": "arXiv Author ID","value": "arXiv Author ID"},
                                 {"key": "Google Scholar Profiles","value": "Google Scholar Profiles"},
@@ -1828,8 +1827,7 @@ def learning_resource(document):
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
                             "name": key,
-                            "element": "input",
-                            "input_type":"select",
+                            "element": "select",
                             "options": [
                                 {"key": "GRID","value": "GRID"},
                                 {"key": "ISNI","value": "ISNI"},
