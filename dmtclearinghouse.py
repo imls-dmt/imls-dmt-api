@@ -1791,7 +1791,7 @@ def learning_resource(document):
                 facet_checkbox=[]
                 facet_field=['subject','license','usage_info','language_primary','languages_secondary','lr_type','purpose','media_type']
                 flexdatalist=['author_org.name','keywords','publisher','ed_frameworks.name','author_names','target_audience','authors.familyName','authors.givenName']
-                select_single_taxonomy=['ed_frameworks.nodes.name']
+                select_single_taxonomy=[]#['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
               
                 # auto_gen=['authors.familyName','authors.givenName'] created
@@ -1807,6 +1807,16 @@ def learning_resource(document):
                 vocabularies_json=r2.json()
                 
                 return_json={}
+                return_json['ed_frameworks.nodes.name']={
+"label": "Ed Frameworks Nodes Name",
+"element": "select",
+"attribute": [
+"single"
+],
+"name": "ed_frameworks.nodes.name",
+"taxonomy": False,
+"options":[{'key': 'Accessible', 'value': 'Accessible'}, {'key': 'Findable', 'value': 'Findable'}, {'key': 'Interoperable', 'value': 'Interoperable'}, {'key': 'Re-usable', 'value': 'Re-usable'}, {'key': 'Analyze', 'value': 'Analyze'}, {'key': 'Assure', 'value': 'Assure'}, {'key': 'Integrate', 'value': 'Integrate'}, {'key': 'Plan', 'value': 'Plan'}, {'key': 'Describe', 'value': 'Describe'}, {'key': 'Discover', 'value': 'Discover'}, {'key': 'Collect', 'value': 'Collect'}, {'key': 'Describe / Metadata', 'value': 'Describe / Metadata'}, {'key': 'Preserve', 'value': 'Preserve'}, {'key': 'Local Data Management', 'value': 'Local Data Management'}, {'key': 'Responsible Data Use', 'value': 'Responsible Data Use'}, {'key': 'The Case for Data Stewardship', 'value': 'The Case for Data Stewardship'}, {'key': 'Data Management Plans', 'value': 'Data Management Plans'}, {'key': 'Publish/Share', 'value': 'Publish/Share'}, {'key': 'Acquire', 'value': 'Acquire'}, {'key': 'Process & Analyze', 'value': 'Process & Analyze'}]
+}
                 template = temlate_doc('learningresources')
                 for key in template:
                     if key in user_identifier:
