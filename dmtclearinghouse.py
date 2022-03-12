@@ -3061,8 +3061,8 @@ def user(action):
                                 users.add([userjson])
                                 users.commit()
                                 token=new_token(newuuid)
-                                resetlink="https://"+request.host+"/api/passwordreset/?token="+token
-                                servername="https://"+request.host
+                                resetlink='''https://'''+request.host+"/api/passwordreset/?token="+token
+                                servername='''https://'''+request.host
                                 emailbody=render_template("adduser_email.html",username=name, resetlink=resetlink,servername=servername)
                                 subject="Your new account for " + request.host_url
                                 isfrom='noreply@'+request.host_url
