@@ -2917,7 +2917,7 @@ def passwordreset():
             token = request.args.get('token')
             tokentuple=db.session.query(Tokens.token).filter(Tokens.token == token).filter(Tokens.date>=yesterday).first()
             if tokentuple:
-                return render_template("password_reset.html",token=token,url=request.host_url+"passwordreset/")
+                return render_template("password_reset.html",token=token,url="https://"+request.host+"/api/passwordreset/")
             return {"status":"error","message":"token not found."}
         else: 
             return({"status":"error","message":"no token in arguments list"})
@@ -2938,7 +2938,7 @@ def passwordreset():
                     #remove token from mysql
                     tokens_to_delete=db.session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
                     for ttd in tokens_to_delete:
-                        session.delete(ttd)
+                        db.session.delete(ttd)
                         try:
                             db.session.commit()
                         except Exception as err:
@@ -3061,8 +3061,8 @@ def user(action):
                                 users.add([userjson])
                                 users.commit()
                                 token=new_token(newuuid)
-                                resetlink=request.host_url+"/passwordreset/?token="+token
-                                servername=request.host_url
+                                resetlink="https://"+request.host+"/api/passwordreset/?token="+token
+                                servername="https://"+request.host
                                 emailbody=render_template("adduser_email.html",username=name, resetlink=resetlink,servername=servername)
                                 subject="Your new account for " + request.host_url
                                 isfrom='noreply@'+request.host_url
