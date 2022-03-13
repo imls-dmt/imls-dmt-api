@@ -1795,10 +1795,12 @@ def learning_resource(document):
                 yes_no_unknown=["credential_status"]
               
                 # auto_gen=['authors.familyName','authors.givenName'] created
-                completion_time=['completion_time']
+
                 taxonomy_field=['contributor_orgs.type','contributors.type']
+                taxonomy_select_single_field=['completion_time']
                 
-                taxonomy_keys={'contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
+               
+                taxonomy_keys={'completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
                 facet_json=r.json()
@@ -1808,15 +1810,15 @@ def learning_resource(document):
                 
                 return_json={}
                 return_json['ed_frameworks.nodes.name']={
-"label": "Ed Frameworks Nodes Name",
-"element": "select",
-"attribute": [
-"single"
-],
-"name": "ed_frameworks.nodes.name",
-"taxonomy": False,
-"options":[{'key': 'Accessible', 'value': 'Accessible'}, {'key': 'Findable', 'value': 'Findable'}, {'key': 'Interoperable', 'value': 'Interoperable'}, {'key': 'Re-usable', 'value': 'Re-usable'}, {'key': 'Analyze', 'value': 'Analyze'}, {'key': 'Assure', 'value': 'Assure'}, {'key': 'Integrate', 'value': 'Integrate'}, {'key': 'Plan', 'value': 'Plan'}, {'key': 'Describe', 'value': 'Describe'}, {'key': 'Discover', 'value': 'Discover'}, {'key': 'Collect', 'value': 'Collect'}, {'key': 'Describe / Metadata', 'value': 'Describe / Metadata'}, {'key': 'Preserve', 'value': 'Preserve'}, {'key': 'Local Data Management', 'value': 'Local Data Management'}, {'key': 'Responsible Data Use', 'value': 'Responsible Data Use'}, {'key': 'The Case for Data Stewardship', 'value': 'The Case for Data Stewardship'}, {'key': 'Data Management Plans', 'value': 'Data Management Plans'}, {'key': 'Publish/Share', 'value': 'Publish/Share'}, {'key': 'Acquire', 'value': 'Acquire'}, {'key': 'Process & Analyze', 'value': 'Process & Analyze'}]
-}
+                "label": "Ed Frameworks Nodes Name",
+                "element": "select",
+                "attribute": [
+                "single"
+                ],
+                "name": "ed_frameworks.nodes.name",
+                "taxonomy": False,
+                "options":[{'key': 'Accessible', 'value': 'Accessible'}, {'key': 'Findable', 'value': 'Findable'}, {'key': 'Interoperable', 'value': 'Interoperable'}, {'key': 'Re-usable', 'value': 'Re-usable'}, {'key': 'Analyze', 'value': 'Analyze'}, {'key': 'Assure', 'value': 'Assure'}, {'key': 'Integrate', 'value': 'Integrate'}, {'key': 'Plan', 'value': 'Plan'}, {'key': 'Describe', 'value': 'Describe'}, {'key': 'Discover', 'value': 'Discover'}, {'key': 'Collect', 'value': 'Collect'}, {'key': 'Describe / Metadata', 'value': 'Describe / Metadata'}, {'key': 'Preserve', 'value': 'Preserve'}, {'key': 'Local Data Management', 'value': 'Local Data Management'}, {'key': 'Responsible Data Use', 'value': 'Responsible Data Use'}, {'key': 'The Case for Data Stewardship', 'value': 'The Case for Data Stewardship'}, {'key': 'Data Management Plans', 'value': 'Data Management Plans'}, {'key': 'Publish/Share', 'value': 'Publish/Share'}, {'key': 'Acquire', 'value': 'Acquire'}, {'key': 'Process & Analyze', 'value': 'Process & Analyze'}]
+                }
                 template = temlate_doc('learningresources')
                 for key in template:
                     if key in user_identifier:
@@ -1883,6 +1885,14 @@ def learning_resource(document):
                         "taxonomy":True
                         }
 
+                    if key in taxonomy_select_single_field:
+                        return_json[key]={
+                        "label": key.replace("_"," ").replace("."," ").title(),
+                        "name": key,
+                        "element": "select",
+                        "taxonomy":True
+                    }
+
                     if key in textarea:
                         return_json[key]={
                         "label": key.replace("_"," ").replace("."," ").title(),
@@ -1938,7 +1948,7 @@ def learning_resource(document):
                         "attribute": ["single"],
                         "name":key,
                         "facet":key,
-                        "taxonomy":False
+                        "taxonomy":True
                         }
 
 
@@ -1958,20 +1968,7 @@ def learning_resource(document):
                             "element": "input",
                             "input_type": "date"
                         }
-                    if key in completion_time:
-                        return_json[key]={
-                            "label": key.replace("_"," ").replace("."," ").title(),
-                            "name": key,
-                            "element":"select",
-                            "options": [{
-                                    "key":"Up to 1 hour",
-                                    "value":"Up to 1 hour"
-                                    },
-                                    {
-                                    "key":"More than 1 hour (but less than 1 day)",
-                                    "value":"More than 1 hour (but less than 1 day)"
-                                    }]
-                        }
+
                     if key in email:
                         return_json[key]={
                             "label": key.replace("_"," ").replace("."," ").title(),
