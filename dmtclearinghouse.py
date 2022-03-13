@@ -1799,7 +1799,7 @@ def learning_resource(document):
                 taxonomy_field=['contributor_orgs.type','contributors.type']
                 taxonomy_select_single_field=['completion_time']
                 
-                custom_labels={'subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name'}
+                custom_labels={'subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
                 taxonomy_keys={'completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
