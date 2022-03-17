@@ -1779,6 +1779,7 @@ def learning_resource(document):
 #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
 # 'credential_status', 'completion_time'']
 
+                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title']
                 text=['locator_type','locator_data','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name","submitter_name"]
                 user_identifier=["authors.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
@@ -1802,22 +1803,41 @@ def learning_resource(document):
                 custom_labels={'ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
                 taxonomy_keys={'lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
+                required_obj={
+                'Required':['abstract_data','access_cost','author_names','keywords','language_primary','','license','locator_data'
+                ,'locator_type','lr_type','submitter_email','submitter_name','title','url']
+
+                ,'Optional':['accessibility_features.name','accessibility_summary','completion_time','country_of_origin','credential_status','ed_frameworks.nodes.description',
+                'ed_frameworks.nodes.name']
+
+                ,'Recommended':['author_org.name_identifier','author_org.name_identifier_type','authors.givenName','authors.familyName','author_org.name',
+                'authors.name_identifier','authors.name_identifier_type','citation','contact.name','contact.org','contributor_orgs.name','contributor_orgs.type'
+                ,'contributors.givenName','contributors.familyName','contributors.type','creator','ed_frameworks.name','languages_secondary','media_type','resource_modification_date'
+                ,'publisher','purpose','subject','','target_audience','target_audience','usage_info']}
                 r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
                 facet_json=r.json()
                 r2=requests.get(request.host_url+'/api/vocabularies/')
-                print(r2)
+                
+
                 vocabularies_json=r2.json()
                 
+                #build framework_nodes:
+                framework_nodes={}
+                for result in  vocabularies_json['results']:
+                    if 'type' in result:
+                        framework_nodes[result['name']]=result['values']
+                      
+
                 return_json={}
                 return_json['ed_frameworks.nodes.name']={
                 "label": "Educational Framework Nodes",
                 "element": "select",
-                "attribute": [
+                "attributes": [
                 "single"
                 ],
                 "name": "ed_frameworks.nodes.name",
                 "taxonomy": False,
-                "options":[{'key': 'Accessible', 'value': 'Accessible'}, {'key': 'Findable', 'value': 'Findable'}, {'key': 'Interoperable', 'value': 'Interoperable'}, {'key': 'Re-usable', 'value': 'Re-usable'}, {'key': 'Analyze', 'value': 'Analyze'}, {'key': 'Assure', 'value': 'Assure'}, {'key': 'Integrate', 'value': 'Integrate'}, {'key': 'Plan', 'value': 'Plan'}, {'key': 'Describe', 'value': 'Describe'}, {'key': 'Discover', 'value': 'Discover'}, {'key': 'Collect', 'value': 'Collect'}, {'key': 'Describe / Metadata', 'value': 'Describe / Metadata'}, {'key': 'Preserve', 'value': 'Preserve'}, {'key': 'Local Data Management', 'value': 'Local Data Management'}, {'key': 'Responsible Data Use', 'value': 'Responsible Data Use'}, {'key': 'The Case for Data Stewardship', 'value': 'The Case for Data Stewardship'}, {'key': 'Data Management Plans', 'value': 'Data Management Plans'}, {'key': 'Publish/Share', 'value': 'Publish/Share'}, {'key': 'Acquire', 'value': 'Acquire'}, {'key': 'Process & Analyze', 'value': 'Process & Analyze'}]
+                "options":framework_nodes#[{'key': 'Accessible', 'value': 'Accessible'}, {'key': 'Findable', 'value': 'Findable'}, {'key': 'Interoperable', 'value': 'Interoperable'}, {'key': 'Re-usable', 'value': 'Re-usable'}, {'key': 'Analyze', 'value': 'Analyze'}, {'key': 'Assure', 'value': 'Assure'}, {'key': 'Integrate', 'value': 'Integrate'}, {'key': 'Plan', 'value': 'Plan'}, {'key': 'Describe', 'value': 'Describe'}, {'key': 'Discover', 'value': 'Discover'}, {'key': 'Collect', 'value': 'Collect'}, {'key': 'Describe / Metadata', 'value': 'Describe / Metadata'}, {'key': 'Preserve', 'value': 'Preserve'}, {'key': 'Local Data Management', 'value': 'Local Data Management'}, {'key': 'Responsible Data Use', 'value': 'Responsible Data Use'}, {'key': 'The Case for Data Stewardship', 'value': 'The Case for Data Stewardship'}, {'key': 'Data Management Plans', 'value': 'Data Management Plans'}, {'key': 'Publish/Share', 'value': 'Publish/Share'}, {'key': 'Acquire', 'value': 'Acquire'}, {'key': 'Process & Analyze', 'value': 'Process & Analyze'}]
                 }
                 template = temlate_doc('learningresources')
                 for key in template:
@@ -1875,7 +1895,7 @@ def learning_resource(document):
                         "element": "select",
                         "name":key,
                         "taxonomy":True,
-                        "attribute": ["multiple"]
+                        "attributes": ["multiple"]
                         }
                     if key in taxonomy_field:
                         return_json[key]={
@@ -1954,7 +1974,7 @@ def learning_resource(document):
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element":"select",
-                        "attribute": ["single"],
+                        "attributes": ["single"],
                         "name":key,
                         "facet":key,
                         "taxonomy":True
@@ -2028,6 +2048,17 @@ def learning_resource(document):
                 
                 new_return_json={}
                 for key in return_json:
+                    if 'attributes' not in return_json[key]:
+                        return_json[key]['attributes']=[]
+                    if key in required_obj['Recommended']:
+                        return_json[key]['required']='recommended'
+                    elif key in required_obj['Optional']:
+                        return_json[key]['required']='optional'
+                    elif key in required_obj['Required']:
+                        return_json[key]['required']='required'
+                    else:
+                        return_json[key]['required']='recommended'
+
                     if return_json[key]['name'] in custom_labels:
                         return_json[key]['label']=custom_labels[return_json[key]['name']]
                     
@@ -2045,9 +2076,11 @@ def learning_resource(document):
                        
 
                         
-# api/resources/?limit=1&facet_limit=-1
-
-
+#                add framework_nodes to fieldsets
+                for obj in field_sets:
+                    if obj['name']=='educational_information':
+                        obj['framework_nodes']=framework_nodes
+                #field_sets['framework_nodes']=framework_nodes
 
                 response = app.response_class(
                 response=json.dumps(field_sets),
