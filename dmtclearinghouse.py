@@ -1779,8 +1779,7 @@ def learning_resource(document):
 #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
 # 'credential_status', 'completion_time'']
 
-                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','locator_data','name_identifier','title']
-                text=['locator_type','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name","submitter_name"]
+                text=['locator_type','locator_data','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name","submitter_name"]
                 user_identifier=["authors.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
