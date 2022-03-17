@@ -1788,7 +1788,8 @@ def learning_resource(document):
                 select_multiple_facet=["accessibility_features.name"]
                 select_multiple_taxonomy=[]
                 facet_checkbox=[]
-                facet_field=['subject','license','usage_info','language_primary','languages_secondary','lr_type','purpose','media_type']
+                facet_datalist=['subject','license','usage_info','language_primary','languages_secondary','purpose','media_type']
+                taxonomy_datalist=['lr_type']
                 flexdatalist=['author_org.name','keywords','publisher','ed_frameworks.name','author_names','target_audience','authors.familyName','authors.givenName']
                 select_single_taxonomy=[]#['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
@@ -1923,7 +1924,7 @@ def learning_resource(document):
                     }
 
 
-                    if key in facet_field:
+                    if key in facet_datalist:
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element":"datalist",
@@ -1931,6 +1932,15 @@ def learning_resource(document):
                         "facet":key,
                         "taxonomy":False
                     }
+                    if key in taxonomy_datalist:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element":"datalist",
+                        "name":key,
+                        "facet":key,
+                        "taxonomy":True
+                    }
+
 
                     if key in flexdatalist:
                         return_json[key]={
