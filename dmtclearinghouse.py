@@ -444,10 +444,11 @@ def fixFacets(results):
         isKey=True
         for data in rfobject[facet]:
             if isKey:
-      
-                keyname=data
+              
+                keyname=data.strip()
                 isKey=False
             else:
+                
                 if len(keyname.strip())>0:
                     data_list[keyname]=data
                 isKey=True
@@ -1780,7 +1781,7 @@ def learning_resource(document):
 # 'credential_status', 'completion_time'']
 
                 textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title']
-                text=['locator_type','locator_data','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name","submitter_name"]
+                text=['locator_type','locator_data','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name"]
                 user_identifier=["authors.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
@@ -1791,7 +1792,8 @@ def learning_resource(document):
                 facet_checkbox=[]
                 facet_datalist=['subject','license','usage_info','language_primary','languages_secondary','purpose','media_type']
                 taxonomy_datalist=['lr_type']
-                flexdatalist=['author_org.name','keywords','publisher','ed_frameworks.name','author_names','target_audience','authors.familyName','authors.givenName']
+                orgs=['author_org.name','contributor_orgs.name']
+                flexdatalist=['keywords','publisher','ed_frameworks.name','author_names','target_audience','authors.familyName','authors.givenName']
                 select_single_taxonomy=[]#['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
               
@@ -1801,7 +1803,7 @@ def learning_resource(document):
                 taxonomy_select_single_field=['completion_time']
                 
                 custom_labels={'ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
-                taxonomy_keys={'lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
+                taxonomy_keys={'author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 required_obj={
                 'Required':['abstract_data','access_cost','author_names','keywords','language_primary','','license','locator_data'
@@ -1970,6 +1972,16 @@ def learning_resource(document):
                         "facet":key,
                         "taxonomy":False
                     }
+                    if key in orgs:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element":"datalist",
+                        "name":key,
+                 
+                        "taxonomy":True
+                    }
+
+
                     if key in select_single_taxonomy:
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
