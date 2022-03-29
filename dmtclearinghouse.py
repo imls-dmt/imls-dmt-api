@@ -2777,7 +2777,11 @@ def vocabularies(document):
                     if all(key in vocabjson for key in ("name","values", "id")):
                         if vocabjson['id'] and vocabjson['name'] and vocabjson['values']:
                             #clean it up:
-                            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values']}
+                            if "type" in vocabjson:
+                                vocabtype=vocabjson['type']
+                            else:
+                                vocabtype=""
+                            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':vocabtype}
                             taxonomies.add([newvocabjson])
                             taxonomies.commit()
                             db.session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
