@@ -359,7 +359,37 @@ def update_resource(j):
         if status ==['in-review','in-process'] and current_status =='in-process':
             can_edit=True
     if can_edit:
-   
+        if status=='published':
+            this_doc_orgs=[]
+            if 'author_org.name' in j:
+                if j['author_org.name'] not in this_doc_orgs:
+                    this_doc_orgs.append(j['author_org.name'])
+            if 'contributor_orgs.name' in j:
+                for c_org in j['contributor_orgs.name']:
+                    if c_org not in this_doc_orgs:
+                        this_doc_orgs.append(c_org)
+            res_taxonomies=taxonomies.search("name:Organizations",rows=1)
+            vocabjson = res_taxonomies.docs[0]
+            current_names=vocabjson['values']
+            for name in this_doc_orgs:
+                if name not in current_names:
+                    vocabjson['values'].append(name)
+            vocabjson.pop("_version_", None)
+            if "type" in vocabjson:
+                    vocabtype=vocabjson['type']
+            else:
+                vocabtype=""
+            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':vocabtype}
+            taxonomies.add([newvocabjson])
+            taxonomies.commit()
+            db.session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
+            try:
+                db.session.commit()
+            except Exception as err:
+                print(err)
+                db.session.rollback()
+                db.session.flush()
+                return({"status":"error","message":"Database commit failed"})
         j['modification_date']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
 
