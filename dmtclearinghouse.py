@@ -27,7 +27,10 @@ import copy
 
 from flask.sessions import SecureCookieSessionInterface
 
-
+import logging
+logging.basicConfig()
+logger = logging.getLogger('gstore_v3')
+logger.setLevel(logging.INFO)
 
 sys.path.append("/opt/DMTClearinghouse/")
 
@@ -336,6 +339,7 @@ def UpdateFacets(j):
     return j
 
 def update_resource(j):
+    print("update resource")
     results = resources.search("id:"+j["id"], rows=1)
     doc={}
     if len(results.docs) > 0:
@@ -343,6 +347,8 @@ def update_resource(j):
     else:
         return{"status":"error","message":"Invalid ID"},400
     current_status=doc['pub_status']
+
+    
     status=j['pub_status']
     if status not in ['in-process','published','in-review','delete-request','pre-pub-review','deleted']:
         return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'delete-request'"},400
@@ -361,27 +367,88 @@ def update_resource(j):
     if can_edit:
         if status=='published':
             this_doc_orgs=[]
-            if 'author_org.name' in j:
-                if j['author_org.name'] not in this_doc_orgs:
-                    this_doc_orgs.append(j['author_org.name'])
-            if 'contributor_orgs.name' in j:
-                for c_org in j['contributor_orgs.name']:
-                    if c_org not in this_doc_orgs:
-                        this_doc_orgs.append(c_org)
+            this_doc_given_names=[]
+            this_doc_family_names=[]
+            if 'author_org' in j:
+                if 'name' in j['author_org']:
+                    if j['author_org']['name'] not in this_doc_orgs:
+                        this_doc_orgs.append(j['author_org']['name'])
+            if 'contributor_orgs' in j:
+                if 'name' in j['contributor_orgs']:
+                    for c_org in j['contributor_orgs']['name']:
+                        if c_org not in this_doc_orgs:
+                            this_doc_orgs.append(c_org)
+
+            if 'authors' in j:
+                for obj in j['authors']:
+                    if obj['givenName'] not in this_doc_given_names:
+                        this_doc_given_names.append(obj['givenName'])
+                    if obj['familyName'] not in this_doc_family_names:
+                        this_doc_family_names.append(obj['familyName'])
+            if 'contributors' in j:
+                for obj in j['contributors']:
+                    if obj['givenName'] not in this_doc_given_names:
+                        this_doc_given_names.append(obj['givenName'])
+                    if obj['familyName'] not in this_doc_family_names:
+                        this_doc_family_names.append(obj['familyName'])
+
+
             res_taxonomies=taxonomies.search("name:Organizations",rows=1)
             vocabjson = res_taxonomies.docs[0]
+
+            res_given_names=taxonomies.search("name:given_names",rows=1)
+            res_given_names_json = res_given_names.docs[0]
+            
+            res_family_names=taxonomies.search("name:family_names",rows=1)
+            res_family_names_json = res_family_names.docs[0]
+
             current_names=vocabjson['values']
+            current_given_names=res_given_names_json['values']
+            current_family_names=res_family_names_json['values']
+            
             for name in this_doc_orgs:
                 if name not in current_names:
                     vocabjson['values'].append(name)
+
+
             vocabjson.pop("_version_", None)
             if "type" in vocabjson:
                     vocabtype=vocabjson['type']
             else:
                 vocabtype=""
-            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':vocabtype}
+            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':""}
             taxonomies.add([newvocabjson])
             taxonomies.commit()
+
+            #Update names
+            for name in this_doc_given_names:
+                if name not in current_given_names:
+                    res_given_names_json['values'].append(name)
+            res_given_names_json.pop("_version_", None)
+            #print(res_given_names_json['values'])
+            if "type" in res_given_names_json:
+                    vocabtype=res_given_names_json['type']
+            else:
+                vocabtype=""
+            newvocabjson={'id':res_given_names_json['id'],'name':res_given_names_json['name'],'values':res_given_names_json['values'],'type':""}
+            taxonomies.add([newvocabjson])
+            taxonomies.commit()
+
+            for name in this_doc_family_names:
+                if name not in current_family_names:
+                    res_family_names_json['values'].append(name)
+            res_family_names_json.pop("_version_", None)
+            if "type" in res_family_names_json:
+                    vocabtype=res_family_names_json['type']
+            else:
+                vocabtype=""
+            newvocabjson={'id':res_family_names_json['id'],'name':res_family_names_json['name'],'values':res_family_names_json['values'],'type':""}
+            taxonomies.add([newvocabjson])
+            taxonomies.commit()
+
+            
+            
+            
             db.session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
             try:
                 db.session.commit()
@@ -1811,7 +1878,7 @@ def learning_resource(document):
 # 'credential_status', 'completion_time'']
 
                 textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title']
-                text=['locator_type','locator_data','contributors.familyName','contributors.givenName','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name"]
+                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name"]
                 user_identifier=["authors.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
@@ -1821,19 +1888,20 @@ def learning_resource(document):
                 select_multiple_taxonomy=[]
                 facet_checkbox=[]
                 facet_datalist=['subject','license','usage_info','language_primary','languages_secondary','purpose','media_type']
-                taxonomy_datalist=['lr_type']
+                taxonomy_datalist=['lr_type','contributors.givenName','authors.givenName','contributors.familyName','authors.familyName']
                 orgs=['author_org.name','contributor_orgs.name']
-                flexdatalist=['keywords','publisher','ed_frameworks.name','author_names','target_audience','authors.familyName','authors.givenName']
+                flexdatalist=['keywords','publisher','ed_frameworks.name','author_names','target_audience']
                 select_single_taxonomy=[]#['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
-              
+                #given_names=['contributors.givenName','authors.givenName']
+                #family_names=['contributors.familyName','authors.familyName']
                 # auto_gen=['authors.familyName','authors.givenName'] created
 
                 taxonomy_field=['contributor_orgs.type','contributors.type']
                 taxonomy_select_single_field=['completion_time']
                 
                 custom_labels={'ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
-                taxonomy_keys={'author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
+                taxonomy_keys={'contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 required_obj={
                 'Required':['abstract_data','access_cost','author_names','keywords','language_primary','','license','locator_data'
@@ -1989,7 +2057,7 @@ def learning_resource(document):
                         "label":key.replace("_"," ").replace("."," ").title(),
                         "element":"datalist",
                         "name":key,
-                        "facet":key,
+                     
                         "taxonomy":True
                     }
 
@@ -2002,6 +2070,8 @@ def learning_resource(document):
                         "facet":key,
                         "taxonomy":False
                     }
+
+
                     if key in orgs:
                         return_json[key]={
                         "label":key.replace("_"," ").replace("."," ").title(),
