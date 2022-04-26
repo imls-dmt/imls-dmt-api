@@ -297,13 +297,22 @@ def insert_new_resource(j):
     j['id']=str(uuid.uuid4())
     j['pub_status']="in-process"
     now_str=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    #j['resource_modification_date']=now_str
+    
     j['modification_date']=now_str
     j['created']=now_str
     j['published']=now_str
     j['rating']=0.0
     j['status']=0
     
+    if 'contributor_orgs' in j:
+        for contributor_org in j['contributor_orgs']:
+            if 'name_identifier' in contributor_org:
+                if 'name_identifier_type' not in contributor_org:
+                    contributor_org['name_identifier_type']='N.A.'
+                else:
+                    if contributor_org['name_identifier_type']=='':
+                        contributor_org['name_identifier_type']='N.A.'
+
     user_info = users.search("id:\""+current_user.id+"\"", rows=1)
     j['submitter_email']=user_info.docs[0]['email']
     j['submitter_name']=user_info.docs[0]['name']
@@ -347,11 +356,24 @@ def update_resource(j):
     else:
         return{"status":"error","message":"Invalid ID"},400
     current_status=doc['pub_status']
+        # now_str=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     
     status=j['pub_status']
     if status not in ['in-process','published','in-review','delete-request','pre-pub-review','deleted']:
         return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'delete-request'"},400
+
+#If contributor_orgs.name_identifier then contributor_orgs.name_identifier_type must be present "N.A." if not:
+    if 'contributor_orgs' in j:
+        for contributor_org in j['contributor_orgs']:
+            if 'name_identifier' in contributor_org:
+                if 'name_identifier_type' not in contributor_org:
+                    contributor_org['name_identifier_type']='N.A.'
+                else:
+                    if contributor_org['name_identifier_type']=='':
+                        contributor_org['name_identifier_type']='N.A.'
+
+
 
     can_edit=False
     if "admin" in current_user.groups:
@@ -374,10 +396,10 @@ def update_resource(j):
                     if j['author_org']['name'] not in this_doc_orgs:
                         this_doc_orgs.append(j['author_org']['name'])
             if 'contributor_orgs' in j:
-                if 'name' in j['contributor_orgs']:
-                    for c_org in j['contributor_orgs']['name']:
-                        if c_org not in this_doc_orgs:
-                            this_doc_orgs.append(c_org)
+                for contributor_org in j['contributor_orgs']:
+                    if 'name' in contributor_org:
+                        if contributor_org['name'] not in this_doc_orgs:
+                            this_doc_orgs.append(contributor_org['name'])
 
             if 'authors' in j:
                 for obj in j['authors']:
