@@ -391,6 +391,8 @@ def update_resource(j):
             this_doc_orgs=[]
             this_doc_given_names=[]
             this_doc_family_names=[]
+            this_doc_keywords=[]
+            
             if 'author_org' in j:
                 if 'name' in j['author_org']:
                     if j['author_org']['name'] not in this_doc_orgs:
@@ -414,6 +416,12 @@ def update_resource(j):
                     if obj['familyName'] not in this_doc_family_names:
                         this_doc_family_names.append(obj['familyName'])
 
+            
+            if 'keywords' in j:
+                for kw in j['keywords']:
+                    if kw not in this_doc_keywords:
+                        this_doc_keywords.append(kw)
+
 
             res_taxonomies=taxonomies.search("name:Organizations",rows=1)
             vocabjson = res_taxonomies.docs[0]
@@ -424,10 +432,37 @@ def update_resource(j):
             res_family_names=taxonomies.search("name:family_names",rows=1)
             res_family_names_json = res_family_names.docs[0]
 
+            res_keywords=taxonomies.search("name:Keywords",rows=1)
+            res_keywords_json = res_keywords.docs[0]
+
+            res_media_types=taxonomies.search('name:"Media Type"',rows=1)
+            res_media_types_json = res_media_types.docs[0]
+            
+
             current_names=vocabjson['values']
             current_given_names=res_given_names_json['values']
             current_family_names=res_family_names_json['values']
+            current_keywords= res_keywords_json['values']
+            current_media_types= res_media_types_json['values']
+
+            if 'media_type' in j:
+                if j['media_type'] not in current_media_types:
+                    res_media_types_json['values'].append(j['media_type'])
             
+                res_media_types_json.pop("_version_", None)
+                newvocabjson={'id':res_media_types_json['id'],'name':res_media_types_json['name'],'values':res_media_types_json['values'],'type':""}
+                taxonomies.add([newvocabjson])
+                taxonomies.commit()
+
+            for kw in this_doc_keywords:
+                if kw not in current_keywords:
+                     res_keywords_json['values'].append(kw)
+
+            res_keywords_json.pop("_version_", None)
+            newvocabjson={'id':res_keywords_json['id'],'name':res_keywords_json['name'],'values':res_keywords_json['values'],'type':""}
+            taxonomies.add([newvocabjson])
+            taxonomies.commit()
+
             for name in this_doc_orgs:
                 if name not in current_names:
                     vocabjson['values'].append(name)
@@ -1899,7 +1934,7 @@ def learning_resource(document):
 #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
 # 'credential_status', 'completion_time'']
 
-                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title']
+                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title','usage_info']
                 text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name"]
                 user_identifier=["authors.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
@@ -1907,13 +1942,13 @@ def learning_resource(document):
                 yn_select=['access_cost']
                 email=['contact.email','submitter_email']
                 select_multiple_facet=["accessibility_features.name"]
-                select_multiple_taxonomy=[]
+                select_multiple_taxonomy=['languages_secondary','subject']
                 facet_checkbox=[]
-                facet_datalist=['subject','license','usage_info','language_primary','languages_secondary','purpose','media_type']
-                taxonomy_datalist=['lr_type','contributors.givenName','authors.givenName','contributors.familyName','authors.familyName']
+                facet_datalist=['license','media_type']
+                taxonomy_datalist=['contributors.givenName','authors.givenName','contributors.familyName','authors.familyName']
                 orgs=['author_org.name','contributor_orgs.name']
                 flexdatalist=['keywords','publisher','ed_frameworks.name','author_names','target_audience']
-                select_single_taxonomy=[]#['ed_frameworks.nodes.name']
+                select_single_taxonomy=['language_primary','lr_type','purpose']#['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
                 #given_names=['contributors.givenName','authors.givenName']
                 #family_names=['contributors.familyName','authors.familyName']
@@ -1923,7 +1958,7 @@ def learning_resource(document):
                 taxonomy_select_single_field=['completion_time']
                 
                 custom_labels={'ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
-                taxonomy_keys={'contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
+                taxonomy_keys={'subject':'Subject Disciplines',  'purpose':'Educational Purpose',  'language_primary':'languages', 'languages_secondary':'languages','contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 required_obj={
                 'Required':['abstract_data','access_cost','author_names','keywords','language_primary','','license','locator_data'
@@ -2110,11 +2145,18 @@ def learning_resource(document):
                         "element":"select",
                         "attributes": ["single"],
                         "name":key,
-                        "facet":key,
+                        
                         "taxonomy":True
                         }
 
-
+                    if key in select_multiple_taxonomy:
+                        return_json[key]={
+                        "label":key.replace("_"," ").replace("."," ").title(),
+                        "element":"select",
+                        "attributes": ["multiple"],
+                        "name":key,
+                        "taxonomy":True
+                        }
 
                     if key in text:
                         return_json[key]={
@@ -2176,7 +2218,10 @@ def learning_resource(document):
                 return_json["country_of_origin"]= {
                 "label": "Country of Origin",
                 "name": "country_of_origin",
-                "element": "datalist",
+                "element": "select",
+                "attributes": [
+                "single"
+                ],
                 "options":countries               
                 }
                 
@@ -2836,19 +2881,23 @@ def vocabularies(document):
         if current_user.is_authenticated:
             if "admin" in current_user.groups:
                 return render_template("edit_vocab.html")
+            elif "editor" in current_user.groups:
+                return render_template("edit_vocab.html")
             else:
-                return{"status":"error","message":"Only admins can edit vocabularies."},400
+                return{"status":"error","message":"Only admins and editors can edit vocabularies."},400
         else:
-            return{"status":"error","message":"Only admins can edit vocabularies."},400
+            return{"status":"error","message":"Only admins and editors can edit vocabularies."},400
 
     if document == "add":
         if current_user.is_authenticated:
             if "admin" in current_user.groups:
                 return render_template("add_vocab.html")
+            if "editor" in current_user.groups:
+                return render_template("add_vocab.html")
             else:
-                return{"status":"error","message":"Only admins can add vocabularies."},400
+                return{"status":"error","message":"Only admins and editors can add vocabularies."},400
         else:
-            return{"status":"error","message":"Only admins can add vocabularies."},400
+            return{"status":"error","message":"Only admins and editors can add vocabularies."},400
 
     if document is None:
         document = 'search.json'
@@ -2904,7 +2953,7 @@ def vocabularies(document):
             return returnval
     if request.method == 'POST':
         if current_user.is_authenticated:
-            if "admin" in current_user.groups:
+            if 'editor' in current_user.groups or 'admin' in current_user.groups:
                 if request.is_json:
                     vocabjson  = request.get_json()
                     #check if it has id,name, and values
@@ -2953,7 +3002,7 @@ def vocabularies(document):
                 else:
                     return{"status":"error","message":"Vocabularies JSON expected."},400
             else:
-                return{"status":"error","message":"Only admins can modify vocabularies."},400
+                return{"status":"error","message":"Only admins and editors can modify vocabularies."},400
         else:
             return{"status":"error","message":"You must be logged in"},400
 
