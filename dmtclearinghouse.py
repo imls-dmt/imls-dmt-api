@@ -3467,7 +3467,7 @@ orcid_client_secret = app.config["ORCID_CLIENT_SECRET"]
 orcid_discovery_url = app.config["ORCID_AUTH_URL"]
 orcid_exchange_url = app.config["ORCID_EXCHANGE_URL"]
 orcid_redirect_url = app.config["ORCID_REDIRECT_URL"]
-
+front_end_url = app.config["FRONT_END_URL"]
 orcid_client = WebApplicationClient(orcid_client_id)
 
 @app.route("/api/orcid_sign_in", methods = ["GET", "POST"])
@@ -3481,7 +3481,8 @@ def orcid_sign_in():
 
 @app.route("/api/orcid_sign_in/orcid_callback", methods = ["GET", "POST"])
 def orcid_callback():
-    
+    request.url=request.url.replace(request.host_url,front_end_url)
+    request.base_url=request.base_url.replace(request.host_url,front_end_url)
     code = request.args.get("code")
     token_endpoint = orcid_exchange_url
     # TODO look at documentation for prepare_token_request() and see how a request is made at 
