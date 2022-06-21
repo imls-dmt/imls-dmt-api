@@ -76,7 +76,7 @@ class Tokens(db.Model):
 
 
 resources_facets = ["facet_authors.givenName","facet_authors.familyName","facet_author_org.name", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
-                    "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks.name","facet_author_names", "facet_ed_frameworks.nodes.name", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type","facet_access_cost"]
+                    "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks.name","facet_author_names", "facet_ed_frameworks.nodes.name", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type","facet_access_cost","facet_status","facet_pub_status"]
 # Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(
     app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
@@ -342,7 +342,7 @@ def insert_new_resource(j):
 
 
 def UpdateFacets(j):
-    for key in ["publisher","author_org.name","language_primary","license","target_audience","lr_type","accessibility_features.name","author_names","languages_secondary","ed_frameworks.nodes.name","purpose","usage_info","keywords","media_type","ed_frameworks.name","access_cost","subject"]:
+    for key in ["publisher","author_org.name","language_primary","license","target_audience","lr_type","accessibility_features.name","author_names","languages_secondary","ed_frameworks.nodes.name","purpose","usage_info","keywords","media_type","ed_frameworks.name","access_cost","subject","status","pub_status"]:
         if key in j.keys():
             j['facet_'+key]=j[key]
     return j

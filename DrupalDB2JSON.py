@@ -111,8 +111,14 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"credential_status", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"resource_modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
  '{"add-field": {"name":"modification_date", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
- '{"add-field": {"name":"name_identifier", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"name_identifier_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"contributor_orgs.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"contributor_orgs.type", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"contributor_orgs.name_identifier", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"contributor_orgs.name_identifier_type", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ 
+ '{"add-field": {"name":"contributors.name_identifier", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"contributors.name_identifier_type", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ 
  '{"add-field": {"name":"accessibility_features.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"accessibility_summary", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"ratings", "type":"pfloat", "multiValued":true, "stored":true,"required":false ,"indexed":false}}',
@@ -140,8 +146,11 @@ facet_fields=[
  '{"add-field": {"name":"facet_media_type", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_access_cost", "type":"boolean", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_completion_time", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"facet_authors.familyName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"facet_authors.givenName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',]
+ '{"add-field": {"name":"facet_authors.familyName", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"facet_authors.givenName", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"facet_contributor_orgs.name", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true}}',
+ '{"add-field": {"name":"facet_status", "type":"boolean", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"facet_pub_status", "type":"string", "multiValued":false, "required":true, "stored":true ,"indexed":true,"default":""}}',]
 
 timestamp_fields=[
  '{"add-field": {"name":"ip", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -289,7 +298,8 @@ for field in fields:
 
 print("Add taxonomies fields")
 fields= ['{"add-field": {"name":"name", "type":"string", "multiValued":false, "stored":true,"required":true}}',
- '{"add-field": {"name":"values", "type":"text_general", "multiValued":true, "stored":true,"required":false}}']
+ '{"add-field": {"name":"values", "type":"text_general", "multiValued":true, "stored":true,"required":false}}',
+ '{"add-field": {"name":"type", "type":"string", "multiValued":false, "stored":true,"required":false}}']
 for field in fields:
     j=json.loads(field)
     # print(j)
@@ -377,10 +387,10 @@ def get_names(id):
     return_object={"familyName": "","givenName": ""}
     firstnamez=session.query(PeopleFirst.field_lr_ppl_name_first_value).filter(PeopleFirst.entity_id==id).first()
     if firstnamez is not None:
-        return_object['givenName']=firstnamez[0]
+        return_object['givenName']=firstnamez[0].strip()
     lastnamez=session.query(PeopleLast.field_lr_ppl_name_last_value).filter(PeopleLast.entity_id==id).first()
     if lastnamez is not None:
-        return_object['familyName']=lastnamez[0]
+        return_object['familyName']=lastnamez[0].strip()
     return return_object
 
 
@@ -472,7 +482,7 @@ def build_authors(field,table):
     ids=session.query(field).filter(table.entity_id==lr.nid).all()
     if ids is not None:
       for id in ids:
-         namesarray.append({"givenName":get_names(id[0])["givenName"],"familyName":get_names(id[0])["familyName"],"name_identifier":"","name_identifier_type":""})
+         namesarray.append({"givenName":get_names(id[0])["givenName"].strip(),"familyName":get_names(id[0])["familyName"].strip(),"name_identifier":"","name_identifier_type":""})
       return namesarray
     else:
         return []
@@ -500,25 +510,25 @@ def build_frameworks(field,table):
    frameworks=get_values_from_target(EdFramework.field_lr_ed_framework_target_id,EdFramework)
    for framework in frameworks:
       if framework=="DataONE Education Modules":
-         obj={"name":framework,"nodes":[]}
+         obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkD1.field_lr_ed_framework_node_data1_target_id,EdFrameworkD1)
          for node in nodes:
             obj["nodes"].append({"description":"","name":node})
          returnarray.append(obj)
       elif framework=="FAIR Data Principles":
-         obj={"name":framework,"nodes":[]}
+         obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkFair.field_framework_node_fair_target_id,EdFrameworkFair)
          for node in nodes:
             obj["nodes"].append({"description":"","name":node})
          returnarray.append(obj)
       elif framework=="ESIP Data Management for Scientists Short Course":
-         obj={"name":framework,"nodes":[]}
+         obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkEsip.field_lr_ed_framework_node_esip_target_id ,EdFrameworkEsip)
          for node in nodes:
             obj["nodes"].append({"description":"","name":node})
          returnarray.append(obj)
       elif framework=="USGS Science Support Framework":
-         obj={"name":framework,"nodes":[]}
+         obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkUsgs.field_lr_ed_framework_node_usgs_target_id,EdFrameworkUsgs)
          for node in nodes:
             obj["nodes"].append({"description":"","name":node})
@@ -534,9 +544,10 @@ def object_as_dict(obj):
 
 #TODO implement the controlled vocabularies below.
 
-def insert_taxonomies(array,name):
+def insert_taxonomies(array,name,tax_type=None):
     taxonomiessolr = pysolr.Solr('http://localhost:8983/solr/taxonomies/', timeout=10)
     j=json.loads('{"name":"'+name+'"}')
+    j['type']=tax_type
     j['values']=array
     taxonomiessolr.add([j])
     r=requests.get("http://localhost:8983/solr/taxonomies/update?commit=true")
@@ -553,11 +564,11 @@ insert_taxonomies(DMTContributorTypes,"Contributor Types")
 DMTEducationalAudiences=get_controlled_vocabulary(31)
 insert_taxonomies(DMTEducationalAudiences,"Educational Audiences")
 DMTEducationalFrameworkNodes_DataONE=get_controlled_vocabulary(32)
-insert_taxonomies(DMTEducationalFrameworkNodes_DataONE,"Educational Framework Nodes DataONE")
+insert_taxonomies(DMTEducationalFrameworkNodes_DataONE,"DataONE Education Modules",'framework')
 DMTEducationalFrameworkNodes_ESIPDataManagementforScientistsShortCourse=get_controlled_vocabulary(33)
-insert_taxonomies(DMTEducationalFrameworkNodes_ESIPDataManagementforScientistsShortCourse,"Educational Framework Nodes ESIP Data Management for Scientists Short Course")
+insert_taxonomies(DMTEducationalFrameworkNodes_ESIPDataManagementforScientistsShortCourse,"ESIP Data Management for Scientists Short Course",'framework')
 DMTEducationalFrameworkNodes_USGS=get_controlled_vocabulary(34)
-insert_taxonomies(DMTEducationalFrameworkNodes_USGS,"Educational Framework Nodes USGS")
+insert_taxonomies(DMTEducationalFrameworkNodes_USGS,"USGS Science Support Framework",'framework')
 DMTEducationalFrameworks=get_controlled_vocabulary(35)
 insert_taxonomies(DMTEducationalFrameworks,"Educational Frameworks")
 DMTEducationalPurpose=get_controlled_vocabulary(36)
@@ -583,9 +594,10 @@ insert_taxonomies(DMTSubjectDisciplines,"Subject Disciplines")
 DMTUsageRights=get_controlled_vocabulary(46)
 insert_taxonomies(DMTUsageRights,"Usage Info")
 DMTEducationalFrameworkNodes_FAIRDataPrinciples=get_controlled_vocabulary(47)
-insert_taxonomies(DMTEducationalFrameworkNodes_FAIRDataPrinciples,"Educational Framework Nodes FAIR Data Principles")
-DMTEducationalFrameworkNodes_Test=get_controlled_vocabulary(48)
-insert_taxonomies(DMTEducationalFrameworkNodes_Test,"Educational Framework Nodes Test")
+#print(DMTEducationalFrameworkNodes_FAIRDataPrinciples)
+insert_taxonomies(DMTEducationalFrameworkNodes_FAIRDataPrinciples,"FAIR Data Principles",'framework')
+# DMTEducationalFrameworkNodes_Test=get_controlled_vocabulary(48)
+# insert_taxonomies(DMTEducationalFrameworkNodes_Test,"Test",'framework')
 #print(DMTAccessibilityFeatures)
 
 
@@ -597,15 +609,17 @@ NewSession.commit()
 print("Migrating all learning resources...")
 Learning_Resources=session.query(Nodes.title,Nodes.status,Nodes.nid,Nodes.uid,Nodes.created).filter(Nodes.type=='dmt_learning_resource').all()
 jsondict=json.loads('{ "learning_resources":[]}')
-
+family_names=[]
+given_names=[]
 for lr in Learning_Resources:
     j=json.loads('{}')
     j['title']=lr.title
     j['status']=lr.status
+    j['facet_status']=lr.status
     if lr.status==0:
-        j['pub_status']='in-process'
+        j['facet_pub_status']='in-process'
     elif lr.status==1:
-        j['pub_status']='published'
+        j['facet_pub_status']='published'
 
     j['modification_date']=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     j['resource_modification_date']="1900-01-01T00:00:00Z"
@@ -614,8 +628,14 @@ for lr in Learning_Resources:
     j['facet_access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
     j['submitter_name']=get_value(Submitter.field_dmt_submitter_name_value,Submitter)
     j['submitter_email']=get_value(SubmitterEmail.field_submission_contact_email_a_email,SubmitterEmail)
-    j['authors']=build_authors(Authorid.field_lr_author_people_target_id,Authorid)
-    j['facet_authors']=build_authors(Authorid.field_lr_author_people_target_id,Authorid)
+    authors_list=build_authors(Authorid.field_lr_author_people_target_id,Authorid)
+    for a in authors_list:
+        if a['givenName'] not in given_names:
+            given_names.append(a['givenName'])
+        if a['familyName'] not in family_names:
+            family_names.append(a['familyName'])
+    j['authors']=authors_list
+    j['facet_authors']=authors_list
     j['author_names']=build_author_names(Authorid.field_lr_author_people_target_id,Authorid)
     j['facet_author_names']=build_author_names(Authorid.field_lr_author_people_target_id,Authorid)
     j['author_org']={"name":get_value_from_target(AuthorOrg.field_lr_author_organizations_target_id,AuthorOrg),"name_identifier":"","name_identifier_type":""}
@@ -640,10 +660,10 @@ for lr in Learning_Resources:
     j['facet_publisher']=get_value_from_target(Publisher.field_lr_publisher_target_id,Publisher)
     j['version']=get_value(Version.field_lr_version_value,Version)
     c_date=get_date(DateCreated.field_lr_date_created_value,DateCreated)
-    print(c_date)
+    #print(c_date)
     j['created']=c_date
     p_date=get_date(DatePublished.field_lr_date_published_value,DatePublished)
-    print(p_date)
+    #print(p_date)
     j['published']=p_date
     accessibility_features=build_accessibility_features(AccessFeatures.field_lr_access_features_target_id,AccessFeatures)
     j['accessibility_features']=accessibility_features
@@ -674,10 +694,15 @@ for lr in Learning_Resources:
     j['id']=str(uuid.uuid3(uuid.NAMESPACE_OID, nidstring))
     
     contributors=[]
+
     for contributorid in get_values(ContributorPeople.field_lr_contributor_people_value,ContributorPeople):
             contributorpersonid=session.query(ContributorPerson.field_lr_contributor_person_target_id).filter(ContributorPerson.entity_id==contributorid).first()
             if contributorpersonid is not None:
                 contributorsnames=get_names(contributorpersonid[0])
+                if contributorsnames['familyName'] not in family_names:
+                    family_names.append(contributorsnames['familyName'])
+                if contributorsnames['givenName'] not in given_names:
+                    given_names.append(contributorsnames['givenName'])
             contributortype=""
             contributortypeid=session.query(ContributorType.field_lr_contributor_type_target_id).filter(ContributorType.entity_id==contributorid).first()
             if contributortypeid is not None:
@@ -687,21 +712,28 @@ for lr in Learning_Resources:
     j['contributors']=contributors
     contributororgsvals=session.query(ContribOrgs.field_lr_contributor_orgs_value).filter(ContribOrgs.entity_id==lr.nid).all()
     j['contributor_orgs']=[]
+    j['facet_contributor_orgs']=[]
     if contributororgsvals is not None:
         contributortype=""
         for contributororgsval in contributororgsvals:
-            contributorobj={"name":"","type":""}
+            contributorobj={}#{"name":"","type":"","name_identifier":"N.A.","name_identifier_type":"N.A."}
             contributororg=""
             contributortype=""
             contributorpersonid=session.query(ContribOrg.field_lr_contributor_org_target_id).filter(ContribOrg.entity_id==contributororgsval[0]).first()
+         
             if contributorpersonid is not None:
                 contributororg=get_taxonomy_value(contributorpersonid[0])
                 contributorobj['name']=contributororg
+                contributorobj['name_identifier']='N.A.'
+                contributorobj['name_identifier_type']='N.A.'
+                contributorobj['type']='N.A.'
             contributortypeid=session.query(ContributorType.field_lr_contributor_type_target_id).filter(ContributorType.entity_id==contributororgsval[0]).first()
             if contributortypeid is not None:
                 contributortype=get_taxonomy_value(contributortypeid[0])
                 contributorobj['type']=contributortype
             j['contributor_orgs'].append(contributorobj)
+            j['facet_contributor_orgs'].append(contributorobj)
+           
 
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     url="http://localhost:8983/solr/learningresources/update/json/docs"
@@ -713,6 +745,12 @@ for lr in Learning_Resources:
     NewSession.add(Learningresources(id = j['id'], value=json.dumps(j)))
     jsondict['learning_resources'].append(j)
 
+
+
+languages=["ab","aa","af","ak","sq","am","ar","an","hy","as","av","ae","ay","az","bm","ba","eu","be","bn","bi","bs","br","bg","my","ca","ch","ce","ny","zh","cu","cv","kw","co","cr","hr","cs","da","dv","nl","dz","en","eo","et","ee","fo","fj","fi","fr","fy","ff","gd","gl","lg","ka","de","el","kl","gn","gu","ht","ha","he","hz","hi","ho","hu","is","io","ig","id","ia","ie","iu","ik","ga","it","ja","jv","kn","kr","ks","kk","km","ki","rw","ky","kv","kg","ko","kj","ku","lo","la","lv","li","ln","lt","lu","lb","mk","mg","ms","ml","mt","gv","mi","mr","mh","mn","na","nv","nd","nr","ng","ne","no","nb","nn","ii","oc","oj","or","om","os","pi","ps","fa","pl","pt","pa","qu","ro","rm","rn","ru","se","sm","sg","sa","sc","sr","sn","sd","si","sk","sl","so","st","es","su","sw","ss","sv","tl","ty","tg","ta","tt","te","th","bo","ti","to","ts","tn","tr","tk","tw","ug","uk","ur","uz","ve","vi","vo","wa","cy","wo","xh","yi","yo","za","zu"]
+insert_taxonomies(languages,"languages",tax_type=None)
+insert_taxonomies(family_names,"family_names",tax_type=None)
+insert_taxonomies(given_names,"given_names",tax_type=None)
 print("commiting")
 NewSession.commit()
 url="http://localhost:8983/solr/learningresources/update?commit=true"
