@@ -617,10 +617,13 @@ for lr in Learning_Resources:
     j['status']=lr.status
     j['facet_status']=lr.status
     if lr.status==0:
+        j['pub_status']='in-process'
+    elif lr.status==1:
+        j['pub_status']='published'
+    if lr.status==0:
         j['facet_pub_status']='in-process'
     elif lr.status==1:
         j['facet_pub_status']='published'
-
     j['modification_date']=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     j['resource_modification_date']="1900-01-01T00:00:00Z"
     j['url']=get_value(LRUrls.field_lr_url_url,LRUrls)
