@@ -1926,7 +1926,7 @@ def learning_resource(document):
                 {'fields':[], 'name':'contributors','label':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type']},
                 {'fields':[], 'name':'md_record','label':'MD Record','contains':[]},
                 {'fields':[], 'name':'educational_information','label':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
-                {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license']},
+                {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license','access_conditions']},
                 {'fields':[], 'name':'resource_location','label':'Resource Location','contains':['locator_data','locator_type']},
                 ]
 
@@ -1934,8 +1934,8 @@ def learning_resource(document):
 #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
 # 'credential_status', 'completion_time'']
 
-                textarea=['abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title','usage_info']
-                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name"]
+                textarea=['access_conditions','abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title','usage_info']
+                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name","lr_outcomes"]
                 user_identifier=["authors.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
@@ -1948,7 +1948,7 @@ def learning_resource(document):
                 taxonomy_datalist=['contributors.givenName','authors.givenName','contributors.familyName','authors.familyName']
                 orgs=['author_org.name','contributor_orgs.name']
                 flexdatalist=['keywords','publisher','ed_frameworks.name','author_names','target_audience']
-                select_single_taxonomy=['language_primary','lr_type','purpose']#['ed_frameworks.nodes.name']
+                select_single_taxonomy=['language_primary','lr_type','purpose','expertise_level']#['ed_frameworks.nodes.name']
                 yes_no_unknown=["credential_status"]
                 #given_names=['contributors.givenName','authors.givenName']
                 #family_names=['contributors.familyName','authors.familyName']
@@ -1958,11 +1958,11 @@ def learning_resource(document):
                 taxonomy_select_single_field=['completion_time']
                 
                 custom_labels={'ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
-                taxonomy_keys={'subject':'Subject Disciplines',  'purpose':'Educational Purpose',  'language_primary':'languages', 'languages_secondary':'languages','contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
+                taxonomy_keys={'subject':'Subject Disciplines',  'purpose':'Educational Purpose', 'expertise_level':'expertise_level', 'language_primary':'languages', 'languages_secondary':'languages','contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 required_obj={
                 'Required':['abstract_data','access_cost','author_names','keywords','language_primary','','license','locator_data'
-                ,'locator_type','lr_type','submitter_email','submitter_name','title','url']
+                ,'locator_type','lr_type','submitter_email','submitter_name','title','url','expertise_level','lr_outcomes']
 
                 ,'Optional':['accessibility_features.name','accessibility_summary','completion_time','country_of_origin','credential_status','ed_frameworks.nodes.description',
                 'ed_frameworks.nodes.name']
