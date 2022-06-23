@@ -82,6 +82,7 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"subject", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"keywords", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"license", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"access_conditions", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"usage_info", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"citation", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"publisher", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -98,6 +99,8 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"completion_time", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"media_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"lr_type", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"lr_outcomes", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"expertise_level", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"contributors.givenName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"contributors.familyName", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"contributors.type", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -754,6 +757,8 @@ languages=["ab","aa","af","ak","sq","am","ar","an","hy","as","av","ae","ay","az"
 insert_taxonomies(languages,"languages",tax_type=None)
 insert_taxonomies(family_names,"family_names",tax_type=None)
 insert_taxonomies(given_names,"given_names",tax_type=None)
+insert_taxonomies(['Beginner','Intermediate','Advanced','Unknown'],"expertise_level",tax_type=None)
+
 print("commiting")
 NewSession.commit()
 url="http://localhost:8983/solr/learningresources/update?commit=true"

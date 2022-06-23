@@ -1919,14 +1919,14 @@ def learning_resource(document):
             elif request.args.get('metadata'):
                 print('title')
                 field_sets=[{'fields':[], 'name':'general','label':'General','contains':[]},
-                {'fields':[], 'name':'access_constraints','label':'Access Constraints','contains':['access_cost']},
+                {'fields':[], 'name':'access_constraints','label':'Access Constraints','contains':['access_cost','license','access_conditions']},
                 {'fields':[], 'name':'accessibility','label':'Accessibility','contains':['accessibility_summary','accessibility_features.name']},
                 {'fields':[], 'name':'authors','label':'Author(s)','contains':['author_names', 'authors.familyName', 'authors.givenName', 'author_org.name','author_org.name_identifier', 'author_org.name_identifier_type','authors.name_identifier', 'authors.name_identifier_type']},
                 {'fields':[], 'name':'resource_contact','label':'Resource Contact','contains':['contact.org', 'contact.name', 'contact.email']},
                 {'fields':[], 'name':'contributors','label':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type']},
                 {'fields':[], 'name':'md_record','label':'MD Record','contains':[]},
                 {'fields':[], 'name':'educational_information','label':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
-                {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license','access_conditions']},
+                # {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license','access_conditions']},
                 {'fields':[], 'name':'resource_location','label':'Resource Location','contains':['locator_data','locator_type']},
                 ]
 
@@ -1957,7 +1957,7 @@ def learning_resource(document):
                 taxonomy_field=['contributor_orgs.type','contributors.type']
                 taxonomy_select_single_field=['completion_time']
                 
-                custom_labels={'ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
+                custom_labels={'lr_outcomes':'Learning Outcomes','ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
                 taxonomy_keys={'subject':'Subject Disciplines',  'purpose':'Educational Purpose', 'expertise_level':'expertise_level', 'language_primary':'languages', 'languages_secondary':'languages','contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 required_obj={
