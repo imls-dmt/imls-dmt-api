@@ -1040,18 +1040,43 @@ def surveytest(survey_id):
 
 @app.route("/api/submit_survey/<survey_id>", methods=['POST'])
 def submit_survey(survey_id):
+    surveys_result1 = surveys.search("id:"+survey_id, rows=1)
+    resourceid=surveys_result1.docs[0]['resourceid']
+    result1 = resources.search("id:"+resourceid, rows=1)
+    resource_doc = result1.docs[0]
+    resource_doc.pop("_version_", None)
     if request.get_json() is None:
         form_answers=request.form.to_dict(flat=False)
+        average_list=[]
         for key in form_answers.keys():
             answers_list=[]
             if key!='submitter': 
                 if form_answers[key][0].isdigit():
                     form_answers[key][0]=int(form_answers[key][0])
-                obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}            
+                obj={'surveys_id':survey_id,'respondent_id':form_answers['submitter'][0],"question_id":key,"answer":form_answers[key][0]}
+
+                if form_answers[key][0].isnumeric():
+                    average_list.append(float(form_answers[key][0]))
+
                 answers_list.append(obj)
             answers.add(answers_list)
             answers.commit()
             print(json.dumps(answers_list))
+        average=sum(average_list) / len(average_list)
+
+        if 'ratings' in resource_doc:
+            resource_doc['ratings'].append(average)
+            resource_doc['rating']=sum(resource_doc['ratings']) / len(resource_doc['ratings'])
+        else:
+            resource_doc['ratings']=[average]
+            resource_doc['rating']=average
+
+        try:
+            resources.add([resource_doc])
+            resources.commit()
+            return({"status":"success","message":"survey submitted successfully."})
+        except Exception as e:
+            return({"status":"fail","message":str(e)})
 
         return({"status":"success","message":"survey submitted successfully."})
     else:
@@ -1060,14 +1085,27 @@ def submit_survey(survey_id):
             if jkey not in answers_json.keys():
                 return({"status":"fail","message":jkey+" missing."})
         answers_list=[]
+        average_list=[]
         for answer in answers_json["answers"]:
+            if answer['answer'].isnumeric():
+                average_list.append(float(answer['answer']))
+
             answer["surveys_id"]=survey_id
             answer["respondent_id"]=answers_json["respondent_id"]
             answers_list.append(answer)
+        average=sum(average_list) / len(average_list)
+        if 'ratings' in resource_doc:
+            resource_doc['ratings'].append(average)
+            resource_doc['rating']=sum(resource_doc['ratings']) / len(resource_doc['ratings'])
+        else:
+            resource_doc['ratings']=[average]
+            resource_doc['rating']=average
         try:
             answers.add(answers_list)
             answers.commit()
-            return({"status":"success","message":"survey submitted successfully."})
+            resources.add([resource_doc])
+            resources.commit()
+            return({"status":"success","message":"survey json submitted successfully."})
         except Exception as e:
             return({"status":"fail","message":str(e)})
         
@@ -1559,8 +1597,8 @@ def question_groups_func(document):
                     insertobj['question_ids']=content['question_ids']
                     insertobj['id']=content['id']
                     try:
-                        questions.add([insertobj])
-                        questions.commit()
+                        question_groups.add([insertobj])
+                        question_groups.commit()
                         return{"status":"success","message":"Question Group Updated Successfully."}
                     except:
                         return{"status":"error","message":"Question Group Update Failed."}
@@ -2444,7 +2482,7 @@ def learning_resources(document):
         searchstring = append_searchstring(searchstring, request, "author_org.name_identifier_type")
         searchstring = append_searchstring(searchstring, request, "contact")
         searchstring = append_searchstring(
-            searchstring, request, "contact_org")
+            searchstring, request, "contact.org")
         searchstring = append_searchstring(
             searchstring, request, "abstract_data")
         searchstring = append_searchstring(
