@@ -381,11 +381,12 @@ def update_resource(j):
     elif "editor" in current_user.groups:
         can_edit=True
     elif "reviewer" in current_user.groups:
-        if status in ['pre-pub-review','delete-request','in-process','in-review'] and current_status not in ['published']:
+        if status in ['pre-pub-review','delete-request','in-process','in-review'] and current_status not in ['published','deleted']:
             can_edit=True
     elif "md-entry" in current_user.groups :
         if status ==['in-review','in-process'] and current_status =='in-process':
             can_edit=True
+    #elif "submitter"
     if can_edit:
         if status=='published':
             this_doc_orgs=[]
@@ -1042,6 +1043,10 @@ def surveytest(survey_id):
 def submit_survey(survey_id):
     surveys_result1 = surveys.search("id:"+survey_id, rows=1)
     resourceid=surveys_result1.docs[0]['resourceid']
+    survey_label=surveys_result1.docs[0]['label']
+    is_default=False
+    if survey_label=='Default':
+        is_default=True
     result1 = resources.search("id:"+resourceid, rows=1)
     resource_doc = result1.docs[0]
     resource_doc.pop("_version_", None)
@@ -1072,8 +1077,9 @@ def submit_survey(survey_id):
             resource_doc['rating']=average
 
         try:
-            resources.add([resource_doc])
-            resources.commit()
+            if is_default:
+                resources.add([resource_doc])
+                resources.commit()
             return({"status":"success","message":"survey submitted successfully."})
         except Exception as e:
             return({"status":"fail","message":str(e)})
@@ -1103,8 +1109,9 @@ def submit_survey(survey_id):
         try:
             answers.add(answers_list)
             answers.commit()
-            resources.add([resource_doc])
-            resources.commit()
+            if is_default:
+                resources.add([resource_doc])
+                resources.commit()
             return({"status":"success","message":"survey json submitted successfully."})
         except Exception as e:
             return({"status":"fail","message":str(e)})
