@@ -360,10 +360,10 @@ def update_resource(j):
 
     
     status=j['pub_status']
-    if status not in ['in-process','published','in-review','delete-request','pre-pub-review','deleted']:
-        return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'delete-request'"},400
+    if status not in ['in-process','published','in-review','deprecate-request','pre-pub-review','deprecated']:
+        return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'deprecate-request'"},400
 
-#If contributor_orgs.name_identifier then contributor_orgs.name_identifier_type must be present "N.A." if not:
+    #If contributor_orgs.name_identifier then contributor_orgs.name_identifier_type must be present "N.A." if not:
     if 'contributor_orgs' in j:
         for contributor_org in j['contributor_orgs']:
             if 'name_identifier' in contributor_org:
@@ -381,9 +381,9 @@ def update_resource(j):
     elif "editor" in current_user.groups:
         can_edit=True
     elif "reviewer" in current_user.groups:
-        if status in ['pre-pub-review','delete-request','in-process','in-review'] and current_status not in ['published','deleted']:
+        if status in ['pre-pub-review','deprecate-request','in-process','in-review'] and current_status not in ['published','deprecated']:
             can_edit=True
-    elif "md-entry" in current_user.groups :
+    elif "submitter" in current_user.groups :
         if status ==['in-review','in-process'] and current_status =='in-process':
             can_edit=True
     #elif "submitter"
@@ -1975,9 +1975,9 @@ def learning_resource(document):
                 {'fields':[], 'name':'resource_location','label':'Resource Location','contains':['locator_data','locator_type']},
                 ]
 
-#[, 'abstract_data', 'citation', , , , 'name_identifier',  , 'title', , , , 'resource_modification_date', , 'usage_info', 'publisher', 
-#'language_primary', 'languages_secondary', 'media_type', 'keywords', 
-# 'credential_status', 'completion_time'']
+                    #[, 'abstract_data', 'citation', , , , 'name_identifier',  , 'title', , , , 'resource_modification_date', , 'usage_info', 'publisher', 
+                    #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
+                    # 'credential_status', 'completion_time'']
 
                 textarea=['access_conditions','abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title','usage_info']
                 text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","submitter_name","lr_outcomes"]
@@ -2300,7 +2300,7 @@ def learning_resource(document):
                        
 
                         
-#                add framework_nodes to fieldsets
+                #                add framework_nodes to fieldsets
                 for obj in field_sets:
                     if obj['name']=='educational_information':
                         obj['framework_nodes']=framework_nodes
@@ -2446,7 +2446,7 @@ def learning_resources(document):
             elif "reviewer" in current_user.groups:
                 searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published  OR pub_status:in-review)"
                 searchstring = append_searchstring(searchstring, request, "pub_status")
-            elif "md-entry" in current_user.groups:
+            elif "submitter" in current_user.groups:
                 searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published)"
                 searchstring = append_searchstring(searchstring, request, "pub_status")
 
@@ -2586,10 +2586,10 @@ def learning_resources(document):
             elif "reviewer" in current_user.groups:
                 searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published  OR pub_status:in-review)"
                 searchstring = append_searchstring(searchstring, request, "pub_status")
-            elif "md-entry" in current_user.groups:
+            elif "submitter" in current_user.groups:
                 searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published)"
                 searchstring = append_searchstring(searchstring, request, "pub_status")
-            elif "submitter" in current_user.groups:
+            else:
                 searchstring = searchstring+" AND pub_status:published"
                 
         else:
