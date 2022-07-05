@@ -2449,6 +2449,8 @@ def learning_resources(document):
             elif "submitter" in current_user.groups:
                 searchstring = searchstring+" OR(pub_status:in-process OR pub_status:published)"
                 searchstring = append_searchstring(searchstring, request, "pub_status")
+            else:
+                searchstring = searchstring+" AND pub_status:published"
 
             if request.args.get("my_resources"):
 
@@ -3121,8 +3123,11 @@ def logout_json():
 @app.route("/api/logout/")
 @login_required
 def logout():
-    logout_user()
-    return redirect("/")
+    try:
+        logout_user()
+        return {'status':'success'}
+    except:
+        return {'status':'fail'}
 
 
 @app.route('/api/protected')
