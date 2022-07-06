@@ -3238,10 +3238,11 @@ def passwordreset():
 @app.route("/api/user/groups", methods=['GET'])
 
 def user_groups():
+    print(current_user.__dict__)
     if current_user.is_authenticated:
-        jsonobj={'groups':current_user.groups}
+        jsonobj=current_user.__dict__
     else:
-        jsonobj={'groups':[]}
+        jsonobj={'id':None,'groups':[],'name':None}
     return jsonobj
 
 
