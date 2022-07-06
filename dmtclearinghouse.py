@@ -3325,7 +3325,7 @@ def user(action):
                                 else:
                                     timezone=""
                                 hashpw=drash.encode(randomString(20))
-                                groups=["submitter","lauth"]
+                                groups=["lauth"]
                                 email=usercontent['email']
                                 name=usercontent['name']
                                 newuuid=str(uuid.uuid4())
