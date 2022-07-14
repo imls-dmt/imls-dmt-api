@@ -79,7 +79,7 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
 '{"add-field": {"name":"contact.email", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
 '{"add-field": {"name":"contact.name", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
 '{"add-field": {"name":"contact.org", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"subject", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"subject", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"keywords", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"license", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"access_conditions", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -134,7 +134,7 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
 facet_fields=[
  '{"add-field": {"name":"facet_author_names", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true}}',  
  '{"add-field": {"name":"facet_author_org.name", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
- '{"add-field": {"name":"facet_subject", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
+ '{"add-field": {"name":"facet_subject", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_keywords", "type":"string", "multiValued":true, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_license", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
  '{"add-field": {"name":"facet_usage_info", "type":"string", "multiValued":false, "stored":true,"required":false ,"indexed":true}}',
