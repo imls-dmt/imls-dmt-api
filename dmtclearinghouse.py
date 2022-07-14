@@ -1983,7 +1983,7 @@ def learning_resource(document):
                 {'fields':[], 'name':'accessibility','label':'Accessibility','contains':['accessibility_summary','accessibility_features.name']},
                 {'fields':[], 'name':'authors','label':'Author(s)','contains':['author_names', 'authors.familyName', 'authors.givenName', 'author_org.name','author_org.name_identifier', 'author_org.name_identifier_type','authors.name_identifier', 'authors.name_identifier_type']},
                 {'fields':[], 'name':'resource_contact','label':'Resource Contact','contains':['contact.org', 'contact.name', 'contact.email']},
-                {'fields':[], 'name':'contributors','label':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type','contributors.name_identifier_type','contributors.name_identifier']},
+                {'fields':[], 'name':'contributors','label':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type','contributor_orgs.name_identifier_type','contributor_orgs.name_identifier']},
                 {'fields':[], 'name':'md_record','label':'MD Record','contains':[]},
                 {'fields':[], 'name':'educational_information','label':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
                 # {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license','access_conditions']},
@@ -1995,8 +1995,8 @@ def learning_resource(document):
                     # 'credential_status', 'completion_time'']
 
                 textarea=['access_conditions','abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title','usage_info']
-                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributors.name_identifier","submitter_name","lr_outcomes"]
-                user_identifier=["authors.name_identifier_type","contributors.name_identifier_type"]
+                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name_identifier","submitter_name","lr_outcomes"]
+                user_identifier=["authors.name_identifier_type","contributor_orgs.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
                 yn_select=['access_cost']
