@@ -286,7 +286,13 @@ def addFacets(j):
     return j
 
 
+def normalize_document(document,template):
+    for key in template:
+        key=key.split('.', 1)[0]
 
+        if key not in document:
+            document[key]=template[key]
+    return document
 
 
 def insert_new_resource(j):
@@ -634,6 +640,7 @@ def format_resource_fromdb(results,sqlresults):
                 returnjsonresult['score']=get_score(results,returnjsonresult['id']) 
                 returnjsonresult['rating']=solrres['rating']
                 returnjsonresult['ratings']=get_ratings(solrres['id'])
+                returnjsonresult=normalize_document(returnjsonresult,lrtemplate)
                 returnval['results'].append(returnjsonresult)
 
 
