@@ -651,8 +651,10 @@ for lr in Learning_Resources:
     j['contact']={"name":contact_name,"org": contact_org,"email":""}
     j['abstract_data']=get_value(Abstracts.field_lr_abstract_value,Abstracts)
     j['abstract_format']=get_value(Abstracts.field_lr_abstract_format,Abstracts)
-    j['subject']=get_value_from_target(Subjects.field_lr_subject_target_id,Subjects)
-    j['facet_subject']=get_value_from_target(Subjects.field_lr_subject_target_id,Subjects)
+    subject_arr=[]
+    subject_arr.append(get_value_from_target(Subjects.field_lr_subject_target_id,Subjects))
+    j['subject']=subject_arr
+    j['facet_subject']=subject_arr
     j['keywords']=get_values_from_target(Keywords.field_lr_keywords_target_id,Keywords)
     j['facet_keywords']=get_values_from_target(Keywords.field_lr_keywords_target_id,Keywords)
     j['license']=get_value_from_target(Licenses.field_lr_license_target_id,Licenses)
