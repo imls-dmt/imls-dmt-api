@@ -76,7 +76,7 @@ class Tokens(db.Model):
 
 
 resources_facets = ["facet_authors.givenName","facet_authors.familyName","facet_author_org.name", "facet_subject", "facet_keywords", "facet_license", "facet_usage_info", "facet_publisher",
-                    "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks.name","facet_author_names", "facet_ed_frameworks.nodes.name", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type","facet_access_cost","facet_status","facet_pub_status"]
+                    "facet_accessibility_features.name","facet_language_primary", "facet_languages_secondary", "facet_ed_frameworks.name","facet_author_names", "facet_ed_frameworks.nodes", "facet_target_audience", "facet_lr_type", "facet_purpose", "facet_media_type","facet_access_cost","facet_status","facet_pub_status"]
 # Create a pysolr object for accessing the "learningresources" and "users" index
 resources = pysolr.Solr(
     app.config["SOLR_ADDRESS"]+"learningresources/", timeout=10)
@@ -356,7 +356,7 @@ def insert_new_resource(j):
 
 
 def UpdateFacets(j):
-    for key in ["publisher","author_org.name","language_primary","license","target_audience","lr_type","accessibility_features.name","author_names","languages_secondary","ed_frameworks.nodes.name","purpose","usage_info","keywords","media_type","ed_frameworks.name","access_cost","subject","status","pub_status"]:
+    for key in ["publisher","author_org.name","language_primary","license","target_audience","lr_type","accessibility_features.name","author_names","languages_secondary","ed_frameworks.name","purpose","usage_info","keywords","media_type","ed_frameworks.name","access_cost","subject","status","pub_status"]:
         if key in j.keys():
             j['facet_'+key]=j[key]
     return j
@@ -1985,7 +1985,7 @@ def learning_resource(document):
                 {'fields':[], 'name':'resource_contact','label':'Resource Contact','contains':['contact.org', 'contact.name', 'contact.email']},
                 {'fields':[], 'name':'contributors','label':'Contributor(s)','contains':['contributors.familyName', 'contributors.givenName','contributor_orgs.name', 'contributor_orgs.type', 'contributors.type','contributor_orgs.name_identifier_type','contributor_orgs.name_identifier']},
                 {'fields':[], 'name':'md_record','label':'MD Record','contains':[]},
-                {'fields':[], 'name':'educational_information','label':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes.description', 'purpose', 'subject', 'ed_frameworks.name', 'ed_frameworks.nodes.name']},
+                {'fields':[], 'name':'educational_information','label':'Educational Information','contains':['target_audience','lr_type','ed_frameworks.nodes', 'purpose', 'subject', 'ed_frameworks.name']},
                 # {'fields':[], 'name':'access_conditions','label':'Access Conditions','contains':['license','access_conditions']},
                 {'fields':[], 'name':'resource_location','label':'Resource Location','contains':['locator_data','locator_type']},
                 ]
@@ -1994,7 +1994,7 @@ def learning_resource(document):
                     #'language_primary', 'languages_secondary', 'media_type', 'keywords', 
                     # 'credential_status', 'completion_time'']
 
-                textarea=['access_conditions','abstract_data','citation','accessibility_summary','ed_frameworks.nodes.description','name_identifier','title','usage_info']
+                textarea=['access_conditions','abstract_data','citation','accessibility_summary','ed_frameworks.nodes','name_identifier','title','usage_info']
                 text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name_identifier","submitter_name","lr_outcomes"]
                 user_identifier=["authors.name_identifier_type","contributor_orgs.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
@@ -2024,8 +2024,8 @@ def learning_resource(document):
                 'Required':['abstract_data','access_cost','author_names','keywords','language_primary','','license','locator_data'
                 ,'locator_type','lr_type','submitter_email','submitter_name','title','url','expertise_level','lr_outcomes']
 
-                ,'Optional':['accessibility_features.name','accessibility_summary','completion_time','country_of_origin','credential_status','ed_frameworks.nodes.description',
-                'ed_frameworks.nodes.name']
+                ,'Optional':['accessibility_features.name','accessibility_summary','completion_time','country_of_origin','credential_status',
+                'ed_frameworks.nodes']
 
                 ,'Recommended':['author_org.name_identifier','author_org.name_identifier_type','authors.givenName','authors.familyName','author_org.name',
                 'authors.name_identifier','authors.name_identifier_type','citation','contact.name','contact.org','contributor_orgs.name','contributor_orgs.type'
@@ -2046,13 +2046,13 @@ def learning_resource(document):
                       
 
                 return_json={}
-                return_json['ed_frameworks.nodes.name']={
+                return_json['ed_frameworks.nodes']={
                 "label": "Educational Framework Nodes",
                 "element": "select",
                 "attributes": [
                 "single"
                 ],
-                "name": "ed_frameworks.nodes.name",
+                "name": "ed_frameworks.nodes",
                 "taxonomy": False,
                 "options":framework_nodes#[{'key': 'Accessible', 'value': 'Accessible'}, {'key': 'Findable', 'value': 'Findable'}, {'key': 'Interoperable', 'value': 'Interoperable'}, {'key': 'Re-usable', 'value': 'Re-usable'}, {'key': 'Analyze', 'value': 'Analyze'}, {'key': 'Assure', 'value': 'Assure'}, {'key': 'Integrate', 'value': 'Integrate'}, {'key': 'Plan', 'value': 'Plan'}, {'key': 'Describe', 'value': 'Describe'}, {'key': 'Discover', 'value': 'Discover'}, {'key': 'Collect', 'value': 'Collect'}, {'key': 'Describe / Metadata', 'value': 'Describe / Metadata'}, {'key': 'Preserve', 'value': 'Preserve'}, {'key': 'Local Data Management', 'value': 'Local Data Management'}, {'key': 'Responsible Data Use', 'value': 'Responsible Data Use'}, {'key': 'The Case for Data Stewardship', 'value': 'The Case for Data Stewardship'}, {'key': 'Data Management Plans', 'value': 'Data Management Plans'}, {'key': 'Publish/Share', 'value': 'Publish/Share'}, {'key': 'Acquire', 'value': 'Acquire'}, {'key': 'Process & Analyze', 'value': 'Process & Analyze'}]
                 }
@@ -2418,8 +2418,7 @@ def learning_resources(document):
     ;;field:{"name":"language_primary","type":"string","example":"es","description":""}
     ;;field:{"name":"languages_secondary","type":"string","example":"fr","description":""}
     ;;field:{"name":"ed_frameworks.name","type":"string","example":"\\\"FAIR Data Principles\\\"","description":""}
-    ;;field:{"name":"ed_frameworks.nodes.name","type":"string","example":"Local Data Management","description":""}
-    ;;field:{"name":"ed_frameworks.nodes.description","type":"string","example":"x","description":""}
+    ;;field:{"name":"ed_frameworks.nodes","type":"string","example":"Local Data Management","description":""}
     ;;field:{"name":"ed_frameworks.nodes.url","type":"string","example":"dataone.org","description":""}
     ;;field:{"name":"target_audience","type":"string","example":"\\\"Research scientist\\\"","description":""}
     ;;field:{"name":"purpose","type":"string","example":"\\\"Professional Development\\\"","description":""}
@@ -2497,8 +2496,7 @@ def learning_resources(document):
         searchstring = append_searchstring(searchstring, request, "authors.name_identifier_type")
         searchstring = append_searchstring(searchstring, request, "contributors.givenName")
         searchstring = append_searchstring(searchstring, request, "contributors.familyName")
-        searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes.name")
-        searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes.description")
+        searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes")
         searchstring = append_searchstring(searchstring, request, "ed_frameworks.nodes.url")
         searchstring = append_searchstring(searchstring, request, "creator")
         searchstring = append_searchstring(searchstring, request, "author_org.name")

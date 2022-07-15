@@ -90,8 +90,8 @@ fields= ['{"add-field": {"name":"title", "type":"text_general", "multiValued":fa
  '{"add-field": {"name":"created", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
  '{"add-field": {"name":"published", "type":"pdate", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":"1900-01-01T00:00:00Z"}}',
  '{"add-field": {"name":"ed_frameworks.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"ed_frameworks.nodes.name", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
- '{"add-field": {"name":"ed_frameworks.nodes.description", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ '{"add-field": {"name":"ed_frameworks.nodes", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
+ #'{"add-field": {"name":"ed_frameworks.nodes.description", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"language_primary", "type":"text_general", "multiValued":false, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"languages_secondary", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
  '{"add-field": {"name":"target_audience", "type":"text_general", "multiValued":true, "stored":true,"required":false ,"indexed":true,"default":""}}',
@@ -516,25 +516,25 @@ def build_frameworks(field,table):
          obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkD1.field_lr_ed_framework_node_data1_target_id,EdFrameworkD1)
          for node in nodes:
-            obj["nodes"].append({"description":"","name":node})
+            obj["nodes"].append(node)
          returnarray.append(obj)
       elif framework=="FAIR Data Principles":
          obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkFair.field_framework_node_fair_target_id,EdFrameworkFair)
          for node in nodes:
-            obj["nodes"].append({"description":"","name":node})
+            obj["nodes"].append(node)
          returnarray.append(obj)
       elif framework=="ESIP Data Management for Scientists Short Course":
          obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkEsip.field_lr_ed_framework_node_esip_target_id ,EdFrameworkEsip)
          for node in nodes:
-            obj["nodes"].append({"description":"","name":node})
+            obj["nodes"].append(node)
          returnarray.append(obj)
       elif framework=="USGS Science Support Framework":
          obj={"name":framework,"nodes":[],"type":"framework"}
          nodes=get_values_from_target(EdFrameworkUsgs.field_lr_ed_framework_node_usgs_target_id,EdFrameworkUsgs)
          for node in nodes:
-            obj["nodes"].append({"description":"","name":node})
+            obj["nodes"].append(node)
          returnarray.append(obj)
       else:
          obj={"name":framework,"nodes":[]}
