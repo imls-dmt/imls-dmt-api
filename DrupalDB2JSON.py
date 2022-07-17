@@ -513,25 +513,25 @@ def build_frameworks(field,table):
    frameworks=get_values_from_target(EdFramework.field_lr_ed_framework_target_id,EdFramework)
    for framework in frameworks:
       if framework=="DataONE Education Modules":
-         obj={"name":framework,"nodes":[],"type":"framework"}
+         obj={"name":framework,"nodes":[]}
          nodes=get_values_from_target(EdFrameworkD1.field_lr_ed_framework_node_data1_target_id,EdFrameworkD1)
          for node in nodes:
             obj["nodes"].append(node)
          returnarray.append(obj)
       elif framework=="FAIR Data Principles":
-         obj={"name":framework,"nodes":[],"type":"framework"}
+         obj={"name":framework,"nodes":[]}
          nodes=get_values_from_target(EdFrameworkFair.field_framework_node_fair_target_id,EdFrameworkFair)
          for node in nodes:
             obj["nodes"].append(node)
          returnarray.append(obj)
       elif framework=="ESIP Data Management for Scientists Short Course":
-         obj={"name":framework,"nodes":[],"type":"framework"}
+         obj={"name":framework,"nodes":[]}
          nodes=get_values_from_target(EdFrameworkEsip.field_lr_ed_framework_node_esip_target_id ,EdFrameworkEsip)
          for node in nodes:
             obj["nodes"].append(node)
          returnarray.append(obj)
       elif framework=="USGS Science Support Framework":
-         obj={"name":framework,"nodes":[],"type":"framework"}
+         obj={"name":framework,"nodes":[]}
          nodes=get_values_from_target(EdFrameworkUsgs.field_lr_ed_framework_node_usgs_target_id,EdFrameworkUsgs)
          for node in nodes:
             obj["nodes"].append(node)
