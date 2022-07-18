@@ -309,7 +309,13 @@ def insert_new_resource(j):
     j['creator']=current_user.name
     j=UpdateFacets(j)
     j['id']=str(uuid.uuid4())
-    j['pub_status']="in-process"
+    can_jump=False
+    if "admin" in current_user.groups:
+        can_jump=True
+    elif "editor" in current_user.groups:
+        can_jump=True
+    if not can_jump:
+        j['pub_status']="in-process"
     now_str=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     
     j['modification_date']=now_str
@@ -372,7 +378,8 @@ def update_resource(j):
     current_status=doc['pub_status']
         # now_str=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    
+    if 'pub_status' not in j:
+        return {"status":"error","message":"pub_status is missing."}
     status=j['pub_status']
     if status not in ['in-process','published','in-review','deprecate-request','pre-pub-review','deprecated']:
         return{"status":"error","message":"status must be one of 'in-process','in-review','published', or 'deprecate-request'"},400
@@ -402,133 +409,133 @@ def update_resource(j):
             can_edit=True
     #elif "submitter"
     if can_edit:
-        if status=='published':
-            this_doc_orgs=[]
-            this_doc_given_names=[]
-            this_doc_family_names=[]
-            this_doc_keywords=[]
-            
-            if 'author_org' in j:
-                if 'name' in j['author_org']:
-                    if j['author_org']['name'] not in this_doc_orgs:
-                        this_doc_orgs.append(j['author_org']['name'])
-            if 'contributor_orgs' in j:
-                for contributor_org in j['contributor_orgs']:
-                    if 'name' in contributor_org:
-                        if contributor_org['name'] not in this_doc_orgs:
-                            this_doc_orgs.append(contributor_org['name'])
+        # if status=='published':
+        this_doc_orgs=[]
+        this_doc_given_names=[]
+        this_doc_family_names=[]
+        this_doc_keywords=[]
+        
+        if 'author_org' in j:
+            if 'name' in j['author_org']:
+                if j['author_org']['name'] not in this_doc_orgs:
+                    this_doc_orgs.append(j['author_org']['name'])
+        if 'contributor_orgs' in j:
+            for contributor_org in j['contributor_orgs']:
+                if 'name' in contributor_org:
+                    if contributor_org['name'] not in this_doc_orgs:
+                        this_doc_orgs.append(contributor_org['name'])
 
-            if 'authors' in j:
-                for obj in j['authors']:
-                    if obj['givenName'] not in this_doc_given_names:
-                        this_doc_given_names.append(obj['givenName'])
-                    if obj['familyName'] not in this_doc_family_names:
-                        this_doc_family_names.append(obj['familyName'])
-            if 'contributors' in j:
-                for obj in j['contributors']:
-                    if obj['givenName'] not in this_doc_given_names:
-                        this_doc_given_names.append(obj['givenName'])
-                    if obj['familyName'] not in this_doc_family_names:
-                        this_doc_family_names.append(obj['familyName'])
+        if 'authors' in j:
+            for obj in j['authors']:
+                if obj['givenName'] not in this_doc_given_names:
+                    this_doc_given_names.append(obj['givenName'])
+                if obj['familyName'] not in this_doc_family_names:
+                    this_doc_family_names.append(obj['familyName'])
+        if 'contributors' in j:
+            for obj in j['contributors']:
+                if obj['givenName'] not in this_doc_given_names:
+                    this_doc_given_names.append(obj['givenName'])
+                if obj['familyName'] not in this_doc_family_names:
+                    this_doc_family_names.append(obj['familyName'])
 
-            
-            if 'keywords' in j:
-                for kw in j['keywords']:
-                    if kw not in this_doc_keywords:
-                        this_doc_keywords.append(kw)
+        
+        if 'keywords' in j:
+            for kw in j['keywords']:
+                if kw not in this_doc_keywords:
+                    this_doc_keywords.append(kw)
 
 
-            res_taxonomies=taxonomies.search("name:Organizations",rows=1)
-            vocabjson = res_taxonomies.docs[0]
+        res_taxonomies=taxonomies.search("name:Organizations",rows=1)
+        vocabjson = res_taxonomies.docs[0]
 
-            res_given_names=taxonomies.search("name:given_names",rows=1)
-            res_given_names_json = res_given_names.docs[0]
-            
-            res_family_names=taxonomies.search("name:family_names",rows=1)
-            res_family_names_json = res_family_names.docs[0]
+        res_given_names=taxonomies.search("name:given_names",rows=1)
+        res_given_names_json = res_given_names.docs[0]
+        
+        res_family_names=taxonomies.search("name:family_names",rows=1)
+        res_family_names_json = res_family_names.docs[0]
 
-            res_keywords=taxonomies.search("name:Keywords",rows=1)
-            res_keywords_json = res_keywords.docs[0]
+        res_keywords=taxonomies.search("name:Keywords",rows=1)
+        res_keywords_json = res_keywords.docs[0]
 
-            res_media_types=taxonomies.search('name:"Media Type"',rows=1)
-            res_media_types_json = res_media_types.docs[0]
-            
+        res_media_types=taxonomies.search('name:"Media Type"',rows=1)
+        res_media_types_json = res_media_types.docs[0]
+        
 
-            current_names=vocabjson['values']
-            current_given_names=res_given_names_json['values']
-            current_family_names=res_family_names_json['values']
-            current_keywords= res_keywords_json['values']
-            current_media_types= res_media_types_json['values']
+        current_names=vocabjson['values']
+        current_given_names=res_given_names_json['values']
+        current_family_names=res_family_names_json['values']
+        current_keywords= res_keywords_json['values']
+        current_media_types= res_media_types_json['values']
 
-            if 'media_type' in j:
-                if j['media_type'] not in current_media_types:
-                    res_media_types_json['values'].append(j['media_type'])
-            
-                res_media_types_json.pop("_version_", None)
-                newvocabjson={'id':res_media_types_json['id'],'name':res_media_types_json['name'],'values':res_media_types_json['values'],'type':""}
-                taxonomies.add([newvocabjson])
-                taxonomies.commit()
-
-            for kw in this_doc_keywords:
-                if kw not in current_keywords:
-                     res_keywords_json['values'].append(kw)
-
-            res_keywords_json.pop("_version_", None)
-            newvocabjson={'id':res_keywords_json['id'],'name':res_keywords_json['name'],'values':res_keywords_json['values'],'type':""}
+        if 'media_type' in j:
+            if j['media_type'] not in current_media_types:
+                res_media_types_json['values'].append(j['media_type'])
+        
+            res_media_types_json.pop("_version_", None)
+            newvocabjson={'id':res_media_types_json['id'],'name':res_media_types_json['name'],'values':res_media_types_json['values'],'type':""}
             taxonomies.add([newvocabjson])
             taxonomies.commit()
 
-            for name in this_doc_orgs:
-                if name not in current_names:
-                    vocabjson['values'].append(name)
+        for kw in this_doc_keywords:
+            if kw not in current_keywords:
+                    res_keywords_json['values'].append(kw)
+
+        res_keywords_json.pop("_version_", None)
+        newvocabjson={'id':res_keywords_json['id'],'name':res_keywords_json['name'],'values':res_keywords_json['values'],'type':""}
+        taxonomies.add([newvocabjson])
+        taxonomies.commit()
+
+        for name in this_doc_orgs:
+            if name not in current_names:
+                vocabjson['values'].append(name)
 
 
-            vocabjson.pop("_version_", None)
-            if "type" in vocabjson:
-                    vocabtype=vocabjson['type']
-            else:
-                vocabtype=""
-            newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':""}
-            taxonomies.add([newvocabjson])
-            taxonomies.commit()
+        vocabjson.pop("_version_", None)
+        if "type" in vocabjson:
+                vocabtype=vocabjson['type']
+        else:
+            vocabtype=""
+        newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':""}
+        taxonomies.add([newvocabjson])
+        taxonomies.commit()
 
-            #Update names
-            for name in this_doc_given_names:
-                if name not in current_given_names:
-                    res_given_names_json['values'].append(name)
-            res_given_names_json.pop("_version_", None)
-            #print(res_given_names_json['values'])
-            if "type" in res_given_names_json:
-                    vocabtype=res_given_names_json['type']
-            else:
-                vocabtype=""
-            newvocabjson={'id':res_given_names_json['id'],'name':res_given_names_json['name'],'values':res_given_names_json['values'],'type':""}
-            taxonomies.add([newvocabjson])
-            taxonomies.commit()
+        #Update names
+        for name in this_doc_given_names:
+            if name not in current_given_names:
+                res_given_names_json['values'].append(name)
+        res_given_names_json.pop("_version_", None)
+        #print(res_given_names_json['values'])
+        if "type" in res_given_names_json:
+                vocabtype=res_given_names_json['type']
+        else:
+            vocabtype=""
+        newvocabjson={'id':res_given_names_json['id'],'name':res_given_names_json['name'],'values':res_given_names_json['values'],'type':""}
+        taxonomies.add([newvocabjson])
+        taxonomies.commit()
 
-            for name in this_doc_family_names:
-                if name not in current_family_names:
-                    res_family_names_json['values'].append(name)
-            res_family_names_json.pop("_version_", None)
-            if "type" in res_family_names_json:
-                    vocabtype=res_family_names_json['type']
-            else:
-                vocabtype=""
-            newvocabjson={'id':res_family_names_json['id'],'name':res_family_names_json['name'],'values':res_family_names_json['values'],'type':""}
-            taxonomies.add([newvocabjson])
-            taxonomies.commit()
+        for name in this_doc_family_names:
+            if name not in current_family_names:
+                res_family_names_json['values'].append(name)
+        res_family_names_json.pop("_version_", None)
+        if "type" in res_family_names_json:
+                vocabtype=res_family_names_json['type']
+        else:
+            vocabtype=""
+        newvocabjson={'id':res_family_names_json['id'],'name':res_family_names_json['name'],'values':res_family_names_json['values'],'type':""}
+        taxonomies.add([newvocabjson])
+        taxonomies.commit()
 
-            
-            
-            
-            db.session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
-            try:
-                db.session.commit()
-            except Exception as err:
-                print(err)
-                db.session.rollback()
-                db.session.flush()
-                return({"status":"error","message":"Database commit failed"})
+        
+        
+        
+        db.session.query(Taxonomies).filter(Taxonomies.id == newvocabjson['id']).update({Taxonomies.value:json.dumps(newvocabjson)}, synchronize_session = False)
+        try:
+            db.session.commit()
+        except Exception as err:
+            print(err)
+            db.session.rollback()
+            db.session.flush()
+            return({"status":"error","message":"Database commit failed"})
         j['modification_date']=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
 
@@ -543,6 +550,7 @@ def update_resource(j):
         except Exception as err:
             db.session.rollback()
             db.session.flush()
+            print("ERROR:"+str(err))
             return({"status":"fail","error":str(err)})
     else:
         return{"status":"error","message":"You do not have permisson to set pub_status to "+status},400
@@ -1849,11 +1857,15 @@ def learning_resource_post(document):
         if request.is_json:
             content = request.get_json()
             if 'id' not in content or content['id']=="": #treat as if it is a new document
+                print('Existing documents must have an ID') 
                 return {'status':'error','message':'Existing documents must have an "id" key.'} 
             else:
                return update_resource(content)
         else:
+            print('POST must have a JSON body') 
             return {'status':'error','message':'POST must have a JSON body'}
+            
+
 
                 
     if request.method == 'DELETE':
