@@ -375,7 +375,8 @@ def update_resource(j):
     sqlresults=db.session.query(Learningresources).filter(Learningresources.id==j['id']).first()   
     lr=json.loads(sqlresults.value)
     j['rating']=lr['rating']
-    j['ratings']=lr['ratings']
+    if 'ratings' in lr:
+        j['ratings']=lr['ratings']
     j['creator']=lr['creator']
     j['created']=lr['created']
     j['submitter_email']=lr['submitter_email']
