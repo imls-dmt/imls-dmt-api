@@ -374,6 +374,13 @@ def update_resource(j):
     print("update resource")
     sqlresults=db.session.query(Learningresources).filter(Learningresources.id==j['id']).first()   
     lr=json.loads(sqlresults.value)
+    j['rating']=lr['rating']
+    j['ratings']=lr['ratings']
+    j['creator']=lr['creator']
+    j['created']=lr['created']
+    j['submitter_email']=lr['submitter_email']
+    j['submitter_name']=lr['submitter_name']
+    j['status']=lr['status']
     for key in lr:
         if key not in j:
             j[key]=lr[key]
