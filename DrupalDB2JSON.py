@@ -10,7 +10,7 @@ import requests
 import pysolr
 import os
 import uuid
-
+import time
 date=0
 file=""
 os.system('terminus auth:login --machine-token='+drupal_config.machine_token)
@@ -610,7 +610,7 @@ NewSession.commit()
 
 #Migrate learning resources from SQL to SOLR
 print("Migrating all learning resources...")
-Learning_Resources=session.query(Nodes.title,Nodes.status,Nodes.nid,Nodes.uid,Nodes.created).filter(Nodes.type=='dmt_learning_resource').all()
+Learning_Resources=session.query(Nodes.title,Nodes.status,Nodes.nid,Nodes.uid,Nodes.created,Nodes.changed).filter(Nodes.type=='dmt_learning_resource').all()
 jsondict=json.loads('{ "learning_resources":[]}')
 family_names=[]
 given_names=[]
@@ -627,7 +627,8 @@ for lr in Learning_Resources:
         j['facet_pub_status']='in-process'
     elif lr.status==1:
         j['facet_pub_status']='published'
-    j['modification_date']=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    # print(lr.changed)
+    j['modification_date']=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(lr.changed))
     j['resource_modification_date']="1900-01-01T00:00:00Z"
     j['url']=get_value(LRUrls.field_lr_url_url,LRUrls)
     j['access_cost']=get_value(Payment.field_lr_payment_required_value,Payment)
