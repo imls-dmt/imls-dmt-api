@@ -654,7 +654,10 @@ def format_resource_fromdb(results,sqlresults):
                     returnjsonresult.pop(k)
             if returnjsonresult["id"]==solrres['id']:
                 returnjsonresult['score']=get_score(results,returnjsonresult['id']) 
-                returnjsonresult['rating']=solrres['rating']
+                if 'rating' in solrres:
+                    returnjsonresult['rating']=solrres['rating']
+                else:
+                    returnjsonresult['rating']=0
                 returnjsonresult['ratings']=get_ratings(solrres['id'])
                 returnjsonresult=normalize_document(returnjsonresult,lrtemplate)
                 returnval['results'].append(returnjsonresult)
