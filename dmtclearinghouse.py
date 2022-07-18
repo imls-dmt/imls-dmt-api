@@ -316,6 +316,9 @@ def insert_new_resource(j):
         can_jump=True
     if not can_jump:
         j['pub_status']="in-process"
+    if 'pub_status' not in j:
+        j['pub_status']="in-process"
+        
     now_str=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     
     j['modification_date']=now_str
