@@ -377,12 +377,14 @@ def update_resource(j):
     j['rating']=lr['rating']
     if 'ratings' in lr:
         j['ratings']=lr['ratings']
+    else:
+        j['ratings']=[]
     j['creator']=lr['creator']
     j['created']=lr['created']
     j['submitter_email']=lr['submitter_email']
     j['submitter_name']=lr['submitter_name']
     j['status']=lr['status']
-    for key in lr:
+    for key in lr: 
         if key not in j:
             j[key]=lr[key]
     results = resources.search("id:"+j["id"], rows=1)
