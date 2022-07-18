@@ -321,7 +321,7 @@ def insert_new_resource(j):
     j['modification_date']=now_str
     j['created']=now_str
     j['published']=now_str
-    j['rating']=0.0
+    j['rating']=0
     j['status']=0
     
     if 'contributor_orgs' in j:
@@ -654,10 +654,7 @@ def format_resource_fromdb(results,sqlresults):
                     returnjsonresult.pop(k)
             if returnjsonresult["id"]==solrres['id']:
                 returnjsonresult['score']=get_score(results,returnjsonresult['id']) 
-                if 'rating' in solrres:
-                    returnjsonresult['rating']=solrres['rating']
-                else:
-                    returnjsonresult['rating']=0
+                returnjsonresult['rating']=solrres['rating']
                 returnjsonresult['ratings']=get_ratings(solrres['id'])
                 returnjsonresult=normalize_document(returnjsonresult,lrtemplate)
                 returnval['results'].append(returnjsonresult)
