@@ -372,6 +372,11 @@ def UpdateFacets(j):
 
 def update_resource(j):
     print("update resource")
+    sqlresults=db.session.query(Learningresources).filter(Learningresources.id==j['id']).first()   
+    lr=json.loads(sqlresults.value)
+    for key in lr:
+        if key not in j:
+            j[key]=lr[key]
     results = resources.search("id:"+j["id"], rows=1)
     doc={}
     if len(results.docs) > 0:
