@@ -3368,11 +3368,12 @@ def user(action):
                                 else:
                                     timezone=""
                                 hashpw=drash.encode(randomString(20))
-                                if current_user.is_authenticated:
-                                    if "admin" in current_user.groups:
                                         groups=usercontent['groups']
-                                else:
-                                    groups=["lauth"]
+                                # if current_user.is_authenticated:
+                                #     if "admin" in current_user.groups:
+                                #         groups=usercontent['groups']
+                                # else:
+                                #     groups=["lauth"]
                                 email=usercontent['email']
                                 name=usercontent['name']
                                 newuuid=str(uuid.uuid4())
