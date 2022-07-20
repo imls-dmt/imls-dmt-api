@@ -377,8 +377,7 @@ def update_resource(j):
     j['rating']=lr['rating']
     if 'ratings' in lr:
         j['ratings']=lr['ratings']
-    else:
-        j['ratings']=[]
+
     j['creator']=lr['creator']
     j['created']=lr['created']
     j['submitter_email']=lr['submitter_email']
