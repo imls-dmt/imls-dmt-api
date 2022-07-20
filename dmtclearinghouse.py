@@ -2578,6 +2578,11 @@ def learning_resources(document):
         searchstring = append_searchstring(searchstring, request, "id")
 
         rows = 10
+        if request.args.get("sort"):
+            sort=request.args.get("sort")
+        else:
+            sort="modification_date desc"
+        #searchstring=searchstring+"sort="+sort
         if request.args.get("summary"):
             if request.args.get("summary").lower() in ['true', '1', 't', 'y', 'yes']:
                 summary=True
@@ -2596,8 +2601,8 @@ def learning_resources(document):
         if request.args.get("facet_sort"):
             params['facet.sort']=request.args.get("facet_sort") 
 
-        results = resources.search(searchstring, **params, fl="*,score" ,rows=rows, start=start)
-        newresults = resources.search(searchstring, fl="id",rows=rows, start=start)
+        results = resources.search(searchstring, **params, fl="*,score" ,rows=rows, start=start, sort=sort)
+        newresults = resources.search(searchstring, fl="id",rows=rows, start=start,sort=sort)
         newarray=[]
         for newres in newresults:
             newarray.append(newres['id'])
@@ -2698,7 +2703,7 @@ def learning_resources(document):
                 sort = content['sort']
                 searchstringexample=searchstringexample+", sort="+str(content['sort'])
             else:
-                sort = ""
+                sort = "modification_date desc"
 
             if 'limit' in content.keys():
                 rows = content['limit']
