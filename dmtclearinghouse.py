@@ -3368,7 +3368,7 @@ def user(action):
                                 else:
                                     timezone=""
                                 hashpw=drash.encode(randomString(20))
-                                        groups=usercontent['groups']
+                                groups=usercontent['groups']
                                 # if current_user.is_authenticated:
                                 #     if "admin" in current_user.groups:
                                 #         groups=usercontent['groups']
