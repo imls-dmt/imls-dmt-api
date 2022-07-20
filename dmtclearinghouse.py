@@ -2701,7 +2701,7 @@ def learning_resources(document):
                 summary = False
             if 'sort' in content.keys():
                 sort = content['sort']
-                searchstringexample=searchstringexample+", sort="+str(content['sort'])
+                #searchstringexample=searchstringexample+", sort="+str(content['sort'])
             else:
                 sort = "modification_date desc"
 
