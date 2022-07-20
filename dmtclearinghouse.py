@@ -672,7 +672,7 @@ def format_resource_fromdb(results,sqlresults):
             if returnjsonresult["id"]==solrres['id']:
                 returnjsonresult['score']=get_score(results,returnjsonresult['id']) 
                 returnjsonresult['rating']=solrres['rating']
-                returnjsonresult['ratings']=get_ratings(solrres['id'])
+                returnjsonresult['ratings']=solrres['ratings']
                 returnjsonresult=normalize_document(returnjsonresult,lrtemplate)
                 returnval['results'].append(returnjsonresult)
 
@@ -900,6 +900,7 @@ def get_ratings(id):
     resourceresult = resources.search("id:"+id, rows=1)
     thisresource=resourceresult.docs[0]
     feedbackresults=feedback.search("resourceid:"+id, rows=100000000)
+    print(feedbackresults)
     ratings=[]
     for result in feedbackresults:
         if 'rating' in result.keys():
@@ -1081,6 +1082,7 @@ def surveytest(survey_id):
 
 @app.route("/api/submit_survey/<survey_id>", methods=['POST'])
 def submit_survey(survey_id):
+    print("????")
     surveys_result1 = surveys.search("id:"+survey_id, rows=1)
     resourceid=surveys_result1.docs[0]['resourceid']
     survey_label=surveys_result1.docs[0]['label']
@@ -1108,11 +1110,13 @@ def submit_survey(survey_id):
             answers.commit()
             print(json.dumps(answers_list))
         average=sum(average_list) / len(average_list)
-
+        print(average)
         if 'ratings' in resource_doc:
+            print("ratings exists!")
             resource_doc['ratings'].append(average)
             resource_doc['rating']=sum(resource_doc['ratings']) / len(resource_doc['ratings'])
         else:
+            print("ratings does not exists!")
             resource_doc['ratings']=[average]
             resource_doc['rating']=average
 
@@ -1140,10 +1144,13 @@ def submit_survey(survey_id):
             answer["respondent_id"]=answers_json["respondent_id"]
             answers_list.append(answer)
         average=sum(average_list) / len(average_list)
+        print(average)
         if 'ratings' in resource_doc:
+            print("exists!")
             resource_doc['ratings'].append(average)
             resource_doc['rating']=sum(resource_doc['ratings']) / len(resource_doc['ratings'])
         else:
+            print("not exists!")
             resource_doc['ratings']=[average]
             resource_doc['rating']=average
         try:
