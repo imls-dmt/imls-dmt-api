@@ -1,0 +1,53 @@
+{
+  "version":"0.1.0-2022-07ESIPDemo",
+  "title":"User interface code for the Data Management Training Clearinghouse",
+  "description":"This is the collection of python code developed in support of the <a href='https://www.dmtc-prod.org/api'>application programming interface</a> for the enhanced Data Management Training Clearinghouse from 2018-2022. This API has been developed in direct support of an updated <a href='https://www.dmtc-prod.org'>user interface</a> for the Clearinghouse. Development of the API and associated user interface has been supported by the Institute of Museum and Library Services (https://ror.org/030prv062, Award Number LG-70-18-0092-18), the Science Gateways Community Institute, and the Earth Science Information Partners (https://ror.org/03q5xa910).",
+  "keywords":[
+    "Data Management Training",
+    "Software",
+    "Application Programming Interface (API)",
+    "Python",
+    "Clearinghouse"
+  ],
+  "creators":[
+    {
+      "name":"Barrett, Hays",
+      "affiliation":"University of New Mexico"
+    },
+    {
+      "name":"Benedict, Karl",
+      "affiliation":"University of New Mexico",
+      "orcid":"0000-0002-9109-2072"
+    },
+    {
+      "name":"Hoebelheinrich, Nancy",
+      "affiliation":"Knowledge Motifs, LLC",
+      "orcid":"0000-0002-6797-7903"
+    },
+    {
+      "name":"Wong, Mona",
+      "affiliation":"San Diego Supercomputer Center"
+    }
+  ],
+  "upload_type":"software",
+  "access_right":"open",
+  "license":"Apache-2.0",
+  "contributors":[
+    {
+      "name":"Earth Science Information Partners",
+      "type":"Sponsor"
+    },
+    {
+      "name":"Earth Science Information Partners",
+      "type":"HostingInstitution"
+    },
+    {
+      "name":"Institute of Museum and Library Services (IMLS)",
+      "type":"Sponsor"
+    },
+    {
+      "name":"Science Gateway Community Institute",
+      "type":"Sponsor"
+    }
+   ]
+}
