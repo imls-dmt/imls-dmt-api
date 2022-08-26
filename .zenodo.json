@@ -1,6 +1,6 @@
 {
   "version":"0.1.0-2022-07ESIPDemo",
-  "title":"User interface code for the Data Management Training Clearinghouse",
+  "title":"Application Programming Interface code for the Data Management Training Clearinghouse",
   "description":"This is the collection of python code developed in support of the <a href='https://www.dmtc-prod.org/api'>application programming interface</a> for the enhanced Data Management Training Clearinghouse from 2018-2022. This API has been developed in direct support of an updated <a href='https://www.dmtc-prod.org'>user interface</a> for the Clearinghouse. Development of the API and associated user interface has been supported by the Institute of Museum and Library Services (https://ror.org/030prv062, Award Number LG-70-18-0092-18), the Science Gateways Community Institute, and the Earth Science Information Partners (https://ror.org/03q5xa910).",
   "keywords":[
     "Data Management Training",
