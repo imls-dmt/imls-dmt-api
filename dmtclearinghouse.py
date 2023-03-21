@@ -3649,7 +3649,9 @@ def orcid_callback():
                     users.commit()
                     #otherwise just log them in.
                 login_user(User(eaobj.docs[0]['id'], eaobj.docs[0]['groups'], eaobj.docs[0]['name']))
-                return redirect(url_for('protected'))
+                # return redirect(url_for('protected'))
+                resp = make_response({'status':'success','message':'Good login'})
+                return resp
             if ea['primary']:
                 primary_email=ea["email"]
 
@@ -3685,14 +3687,17 @@ def orcid_callback():
             db.session.flush()
             return({"status":"error","message":"Database commit failed"})
         login_user(User(newuuid, ["submitter","oauth"], users_username))
-        return redirect(url_for('protected'))
+        resp = make_response({'status':'success','message':'Good login'})
+        return resp
     #Otherwise just log in the user.
     else:
         if userobj.docs[0]['enabled']:
             login_user(User(userobj.docs[0]['id'], userobj.docs[0]['groups'], userobj.docs[0]['name']))
-            return redirect(url_for('protected'))
+            resp = make_response({'status':'success','message':'Good login'})
+            return resp
         else:
-            return "User "+userobj.docs[0]['name']+" has been disabled by admin."
+          #  return "User "+userobj.docs[0]['name']+" has been disabled by admin."
+          return {'status':'error','message':"User "+userobj.docs[0]['name']+" has been disabled by admin."}
     
     return ":)" #redirect('/protected')
 
