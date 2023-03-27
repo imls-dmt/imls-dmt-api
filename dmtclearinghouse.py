@@ -3589,7 +3589,7 @@ def orcid_sign_in():
     print(request.url)
     request_uri = orcid_client.prepare_request_uri(
         orcid_discovery_url,
-        redirect_uri= orcid_redirect_url,
+        redirect_uri= orcid_redirect_url+"&origin_url="+request.url,
         scope="openid",  #use "openid" or "/authenticate"
     )
     return redirect(request_uri)
