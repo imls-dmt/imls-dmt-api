@@ -3586,7 +3586,8 @@ orcid_client = WebApplicationClient(orcid_client_id)
 
 @app.route("/api/orcid_sign_in", methods = ["GET", "POST"])
 def orcid_sign_in():
-    print(request.url)
+    print("HEADERS")
+    print(request.headers)
     request_uri = orcid_client.prepare_request_uri(
         orcid_discovery_url,
         redirect_uri= orcid_redirect_url+"&origin_url="+request.headers.get('Referer'),
