@@ -3650,8 +3650,9 @@ def orcid_callback():
                     #otherwise just log them in.
                 login_user(User(eaobj.docs[0]['id'], eaobj.docs[0]['groups'], eaobj.docs[0]['name']))
                 # return redirect(url_for('protected'))
-                resp = make_response({'status':'success','message':'Good login'})
-                return resp
+                return redirect("https://www.dmtc-devel.org/home")
+                #resp = make_response({'status':'success','message':'Good login'})
+                #return resp
             if ea['primary']:
                 primary_email=ea["email"]
 
