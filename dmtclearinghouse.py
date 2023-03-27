@@ -3650,7 +3650,7 @@ def orcid_callback():
                     #otherwise just log them in.
                 login_user(User(eaobj.docs[0]['id'], eaobj.docs[0]['groups'], eaobj.docs[0]['name']))
                 # return redirect(url_for('protected'))
-                return redirect(request.host_url+"/login")
+                return redirect(app.config["LOGIN_URL"])
                 #resp = make_response({'status':'success','message':'Good login'})
                 #return resp
             if ea['primary']:
