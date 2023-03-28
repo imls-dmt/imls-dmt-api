@@ -3586,20 +3586,21 @@ orcid_client = WebApplicationClient(orcid_client_id)
 
 @app.route("/api/orcid_sign_in", methods = ["GET", "POST"])
 def orcid_sign_in():
-    print("HEADERS")
-    print(request.headers)
     request_uri = orcid_client.prepare_request_uri(
         orcid_discovery_url,
-        redirect_uri= orcid_redirect_url+"&origin_url=https://"+request.headers.get('X-Forwarded-Host')+"/login",
+        redirect_uri= orcid_redirect_url+"/"+request.headers.get('X-Forwarded-Host'),
         scope="openid",  #use "openid" or "/authenticate"
+        
     )
     return redirect(request_uri)
 
-@app.route("/api/orcid_sign_in/orcid_callback", methods = ["GET", "POST"])
-def orcid_callback():
+@app.route("/api/orcid_sign_in/orcid_callback/<origin>", methods = ["GET", "POST"])
+def orcid_callback(origin):
+    print(origin)
     request.url=request.url.replace(request.host_url,front_end_url)
     request.base_url=request.base_url.replace(request.host_url,front_end_url)
     code = request.args.get("code")
+    print(request.args)
     token_endpoint = orcid_exchange_url
     # TODO look at documentation for prepare_token_request() and see how a request is made at 
     # https://members.orcid.org/api/oauth/3legged-oauth
@@ -3652,7 +3653,7 @@ def orcid_callback():
                     #otherwise just log them in.
                 login_user(User(eaobj.docs[0]['id'], eaobj.docs[0]['groups'], eaobj.docs[0]['name']))
                 # return redirect(url_for('protected'))
-                return redirect(app.config["LOGIN_URL"])
+                return redirect("https://"+origin+"/login")
                 #resp = make_response({'status':'success','message':'Good login'})
                 #return resp
             if ea['primary']:
