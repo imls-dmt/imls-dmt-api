@@ -1685,6 +1685,7 @@ def question_groups_func(document):
 
 @app.route("/api/feedback/", defaults={'document': None}, methods=['GET','POST'])
 @app.route("/api/feedback/<document>", methods=['GET', 'POST'])
+@login_required
 def addfeedback(document):
     """ 
     GET:
