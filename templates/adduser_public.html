@@ -639,7 +639,7 @@ $('#adduserbutton').click(function() {
    // console.log(data)
     $.ajax({
         type: "POST",
-        url: '/user/create',
+        url: '/api/user/create',
         dataType: 'json',
         contentType: 'application/json',
         async: false,
@@ -666,7 +666,7 @@ $('#adduserbutton').click(function() {
             if (textStatus=='CONFLICT'){
                 var toastHTML = '<span>'+data['responseJSON']['message']+'</span><button class="btn-flat toast-action">OK</button>';
                 M.toast({html: toastHTML, completeCallback: function(){
-                window.location.href="/user/pwreset"; 
+                window.location.href="/api/user/pwreset"; 
             }});
 
             }else{
