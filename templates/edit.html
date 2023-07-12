@@ -638,7 +638,7 @@ searchstring=$('#search').val()
 
     $.ajax({
         type: "POST",
-        url: '/user/search',
+        url: '/api/user/search',
         dataType: 'json',
         contentType: 'application/json',
         async: false,
@@ -695,7 +695,7 @@ updatesearch()
 
         $.ajax({
         type: "POST",
-        url: '/user/edit',
+        url: '/api/user/edit',
         dataType: 'json',
         contentType: 'application/json',
         async: false,
