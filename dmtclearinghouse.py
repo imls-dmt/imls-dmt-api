@@ -3478,7 +3478,7 @@ def user(action):
 
 
                                         token=new_token(newuuid)
-                                        resetlink=request.host_url+"/passwordreset/?token="+token
+                                        resetlink=request.host_url+"/api/passwordreset/?token="+token
                                         servername=request.host_url
                                         emailbody=render_template("adduser_email.html",username=name, resetlink=resetlink,servername=servername)
                                         subject="Your new account for " + request.host_url
@@ -3550,7 +3550,7 @@ def user(action):
                         if len(emailresults.docs)!=0:
                             if len(usercontent['email'])>0:
                                 token=new_token(emailresults.docs[0]['id'])
-                                resetlink=request.host_url+"/passwordreset/?token="+token
+                                resetlink=request.host_url+"/api/passwordreset/?token="+token
                                 servername=request.host_url
                                 emailbody=render_template("password_reset_email.html", resetlink=resetlink,servername=servername)
                                 subject="Password reset for " + request.host_url
