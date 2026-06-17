@@ -17,7 +17,6 @@ import random
 import string
 import smtplib
 from email.message import EmailMessage
-from flask_oauthlib.provider import OAuth2Provider
 from oauthlib.oauth2 import WebApplicationClient, BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 from feedgen.feed import FeedGenerator

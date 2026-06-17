@@ -1,0 +1,22 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.venv
+venv
+env
+.env
+
+# IDE / editor artefacts
+.nova
+.vscode
+.idea
+
+# OS artefacts
+.DS_Store
+
+# Secrets — ensure they are never baked into the image
+dmtconfig_local.py
