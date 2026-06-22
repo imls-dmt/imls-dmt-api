@@ -22,6 +22,8 @@ from requests_oauthlib import OAuth2Session
 from feedgen.feed import FeedGenerator
 import sys
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import copy
 
 from flask.sessions import SecureCookieSessionInterface
@@ -37,7 +39,6 @@ sys.path.append("/opt/DMTClearinghouse/")
 # Create flask app
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
-CORS(app,supports_credentials=True)
 session_cookie = SecureCookieSessionInterface().get_signing_serializer(app)
 
 def randomString(stringLength=8):
@@ -46,6 +47,8 @@ def randomString(stringLength=8):
 
 # Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
+CORS(app, supports_credentials=True, origins=[app.config.get("FRONT_END_URL", "http://localhost")])
+limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 #Create db object. This will be used for all MySQL actions in this app.
 db = SQLAlchemy(app)
@@ -184,11 +187,21 @@ def strip_version(doc):
 
 
 
+def _escape_solr(value):
+    # Escape Solr special characters to prevent query injection.
+    # Multi-char operators must come before single-char to avoid double-escaping.
+    value = value.replace('\\', '\\\\')
+    for char in ('+', '-', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '/'):
+        value = value.replace(char, '\\' + char)
+    value = value.replace('&&', '\\&&').replace('||', '\\||')
+    return value
+
+
 def append_searchstring(searchstring, request, name):
-    """ 
+    """
     Appends searchstring for most text searches.
 
-    Parameters: 
+    Parameters:
 
         searcstring (str): Existing search string.
 
@@ -196,14 +209,11 @@ def append_searchstring(searchstring, request, name):
 
         name (str): The name of the parameter we wish to append to the string.
 
-    Returns: 
-    str: Either the appended search string or the original if the validation fails. 
+    Returns:
+    str: Either the appended search string or the original if the validation fails.
     """
     if request.args.get(name):
-        if ":" not in request.args.get(name):
-            return searchstring+" AND "+name+":"+request.args.get(name)
-        else:
-            return searchstring
+        return searchstring + " AND " + name + ":" + _escape_solr(request.args.get(name))
     else:
         return searchstring
 
@@ -3112,6 +3122,7 @@ def vocabularies(document):
             return{"status":"error","message":"You must be logged in"},400
 
 @app.route("/api/login_json", methods=['POST'])
+@limiter.limit("10/minute")
 def login_json():
     """ 
     POST:
@@ -3143,6 +3154,7 @@ def login_json():
 
 
 @app.route("/api/login/", methods=['GET','POST'])
+@limiter.limit("10/minute")
 def login():
     """ 
     GET:
@@ -3246,6 +3258,7 @@ def send_mail(message,subject,isfrom,isto):
 
 
 @app.route("/api/passwordreset/", methods=['GET','POST'])
+@limiter.limit("5/hour")
 def passwordreset():
     yesterday=datetime.now() - timedelta(days=1)
     if request.method == 'GET':
@@ -3305,6 +3318,7 @@ def user_groups():
 
 
 @app.route("/api/user/<action>", methods=['GET','POST'])
+@limiter.limit("20/hour")
 def user(action):
     if request.method == 'GET':
         if action=="pwreset":
@@ -3383,12 +3397,10 @@ def user(action):
                                 else:
                                     timezone=""
                                 hashpw=drash.encode(randomString(20))
-                                groups=usercontent['groups']
-                                # if current_user.is_authenticated:
-                                #     if "admin" in current_user.groups:
-                                #         groups=usercontent['groups']
-                                # else:
-                                #     groups=["lauth"]
+                                if current_user.is_authenticated and "admin" in current_user.groups:
+                                    groups=usercontent.get('groups', ["lauth"])
+                                else:
+                                    groups=["lauth"]
                                 email=usercontent['email']
                                 name=usercontent['name']
                                 newuuid=str(uuid.uuid4())
