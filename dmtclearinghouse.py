@@ -108,13 +108,43 @@ drash = drupal_hash_utility.DrupalHashUtility()
 #Admin Functions###
 ###################
 
+def _flatten_solr_doc(doc):
+    """Flatten one level of nested JSON into Solr's dotted field convention.
+
+    Stored MySQL blobs keep nested objects (e.g. author_org={"name":...}) and
+    lists of objects (contributors=[{...},...]), but Solr indexes them as flat
+    dotted fields — author_org.name (scalar), contributors.familyName (a
+    multivalued array, one entry per list element). pysolr's add() would
+    otherwise send a map-valued field to /update and Solr would read it as an
+    atomic-update operation, failing the insert. One level matches the data;
+    no DMTC blob nests deeper.
+    """
+    out = {}
+    for key, value in doc.items():
+        if isinstance(value, dict):
+            for subkey, subval in value.items():
+                out[key + "." + subkey] = subval
+        elif isinstance(value, list) and value and all(isinstance(e, dict) for e in value):
+            subkeys = []
+            for element in value:
+                for subkey in element:
+                    if subkey not in subkeys:
+                        subkeys.append(subkey)
+            for subkey in subkeys:
+                out[key + "." + subkey] = [element.get(subkey, "") for element in value]
+        else:
+            out[key] = value
+    return out
+
+
 def _reindex_core(model, core, label, result):
     """Rebuild one Solr core from its MySQL backup blobs.
 
     Unconditionally wipes and repopulates the core from the system-of-record
     (MySQL), so it works for a fresh/empty Solr (bootstrap) as well as for
     drift repair. The stored blobs may carry a stale `_version_`; it is stripped
-    to avoid Solr optimistic-concurrency (HTTP 409) conflicts on insert.
+    to avoid Solr optimistic-concurrency (HTTP 409) conflicts on insert, and
+    nested objects are flattened to match Solr's dotted-field index structure.
 
     Each core is isolated: a failure here is recorded and does not abort the
     reindex of the other cores.
@@ -128,7 +158,7 @@ def _reindex_core(model, core, label, result):
             except (ValueError, TypeError):
                 continue
             doc.pop('_version_', None)
-            docs.append(doc)
+            docs.append(_flatten_solr_doc(doc))
         core.delete(q='*:*')
         core.commit()
         if docs:
@@ -142,11 +172,14 @@ def _reindex_core(model, core, label, result):
 
 
 def reindex():
+    # Rebuilds the MySQL-backed cores from their backup blobs. Feedback is
+    # intentionally excluded: prod keeps no feedback docs in Solr (the core is
+    # empty there), so indexing it from MySQL would make dev/test diverge from
+    # production. Feedback data is preserved in MySQL.
     returnj = {"result": {}}
     _reindex_core(Learningresources, resources, "learning_resources", returnj['result'])
     _reindex_core(Users, users, "users", returnj['result'])
     _reindex_core(Taxonomies, taxonomies, "taxonomies", returnj['result'])
-    _reindex_core(Feedback, feedback, "feedback", returnj['result'])
     return returnj
 
 
