@@ -108,76 +108,45 @@ drash = drupal_hash_utility.DrupalHashUtility()
 #Admin Functions###
 ###################
 
+def _reindex_core(model, core, label, result):
+    """Rebuild one Solr core from its MySQL backup blobs.
+
+    Unconditionally wipes and repopulates the core from the system-of-record
+    (MySQL), so it works for a fresh/empty Solr (bootstrap) as well as for
+    drift repair. The stored blobs may carry a stale `_version_`; it is stripped
+    to avoid Solr optimistic-concurrency (HTTP 409) conflicts on insert.
+
+    Each core is isolated: a failure here is recorded and does not abort the
+    reindex of the other cores.
+    """
+    try:
+        rows = db.session.query(model).all()
+        docs = []
+        for row in rows:
+            try:
+                doc = json.loads(row.value)
+            except (ValueError, TypeError):
+                continue
+            doc.pop('_version_', None)
+            docs.append(doc)
+        core.delete(q='*:*')
+        core.commit()
+        if docs:
+            core.add(docs)
+            core.commit()
+        found = core.search("*:*", rows=0).raw_response['response']['numFound']
+        result[label] = {"success": found == len(docs), "solrcount": found, "sqlcount": len(docs)}
+    except Exception as err:
+        db.session.rollback()
+        result[label] = {"success": False, "error": str(err)}
+
+
 def reindex():
-
-    lrcount=0
-    returnj= json.loads('{"result":{}}')
-
-    Learning_Resources_IDs_count=db.session.query(Learningresources).count()
-    rescount=resources.search("*:*",rows=0)
-    if rescount.raw_response['response']['numFound']==Learning_Resources_IDs_count:
-        resources.delete(q='*:*')
-        test = resources.commit()
-        Learning_Resources_IDs_res=db.session.query(Learningresources).all()
-        Learning_Resources_JSON=[]
-        for doc in Learning_Resources_IDs_res:
-            Learning_Resources_JSON.append(json.loads(doc.value))
-            lrcount=lrcount+1
-        resources.add(Learning_Resources_JSON)
-        test = resources.commit()
-        res=resources.search("*:*",rows=0)
-        if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['learning_resources']={"success":True,"count":lrcount}
-        else:
-            returnj['result']['learning_resources']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
-    else:
-        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Learning_Resources_IDs_count}
-    
-    lrcount=0
-    Users_IDs_count=db.session.query(Users).count()
-    rescount=users.search("*:*",rows=0)
-    if rescount.raw_response['response']['numFound']==Users_IDs_count: 
-        users.delete(q='*:*')
-        test = users.commit()
-        Users_IDs_res=db.session.query(Users).all()
-        Users_IDs_JSON=[]
-        for doc in Users_IDs_res:
-            Users_IDs_JSON.append(json.loads(doc.value))
-            lrcount=lrcount+1
-        users.add(Users_IDs_JSON)
-        test = users.commit()
-        res=users.search("*:*",rows=0)
-        if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['users']={"success":True,"count":lrcount}
-        else:
-            returnj['result']['users']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
-    else:
-        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Users_IDs_count}
-
-
-    lrcount=0
-    Taxonomies_IDs_count=db.session.query(Taxonomies).count()
-    rescount=taxonomies.search("*:*",rows=0)
-    if rescount.raw_response['response']['numFound']==Taxonomies_IDs_count: 
-        taxonomies.delete(q='*:*')
-        test = taxonomies.commit()
-        Taxonomies_IDs_res=db.session.query(Taxonomies).all()
-        Taxonomies_IDs_JSON=[]
-        for doc in Taxonomies_IDs_res:
-            Taxonomies_IDs_JSON.append(json.loads(doc.value))
-            lrcount=lrcount+1
-        taxonomies.add(Taxonomies_IDs_JSON)
-        test = taxonomies.commit()
-        res=taxonomies.search("*:*",rows=0)
-        if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['taxonomies']={"success":True,"count":lrcount}
-        else:
-            returnj['result']['taxonomies']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
-    else:
-        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Taxonomies_IDs_count}
-
-
-
+    returnj = {"result": {}}
+    _reindex_core(Learningresources, resources, "learning_resources", returnj['result'])
+    _reindex_core(Users, users, "users", returnj['result'])
+    _reindex_core(Taxonomies, taxonomies, "taxonomies", returnj['result'])
+    _reindex_core(Feedback, feedback, "feedback", returnj['result'])
     return returnj
 
 
