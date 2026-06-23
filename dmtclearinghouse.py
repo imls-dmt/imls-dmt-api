@@ -69,6 +69,30 @@ class Feedback(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     value = db.Column(db.String(16777215))
 
+# Backup tables for the cores that were previously Solr-only. Solr stays the
+# primary store; these hold a JSON-blob copy for disaster recovery and to make
+# dev/test seeding reproducible from the MySQL snapshot. Kept in sync by
+# solr_to_mysql() (Solr -> MySQL) rather than transactional dual-write.
+class Questions(db.Model):
+    __tablename__ = 'questions'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class QuestionGroups(db.Model):
+    __tablename__ = 'question_groups'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Surveys(db.Model):
+    __tablename__ = 'surveys'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Answers(db.Model):
+    __tablename__ = 'answers'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
 class Tokens(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(16777215))
@@ -176,10 +200,65 @@ def reindex():
     # intentionally excluded: prod keeps no feedback docs in Solr (the core is
     # empty there), so indexing it from MySQL would make dev/test diverge from
     # production. Feedback data is preserved in MySQL.
+    #
+    # The questions/question_groups/surveys/answers cores are kept in MySQL by
+    # solr_to_mysql(); their backup blobs already carry the Solr-assigned ids, so
+    # reindexing from MySQL preserves ids (the live add paths let Solr generate
+    # them). timestamps remains Solr-only by design.
     returnj = {"result": {}}
     _reindex_core(Learningresources, resources, "learning_resources", returnj['result'])
     _reindex_core(Users, users, "users", returnj['result'])
     _reindex_core(Taxonomies, taxonomies, "taxonomies", returnj['result'])
+    _reindex_core(Questions, questions, "questions", returnj['result'])
+    _reindex_core(QuestionGroups, question_groups, "question_groups", returnj['result'])
+    _reindex_core(Surveys, surveys, "surveys", returnj['result'])
+    _reindex_core(Answers, answers, "answers", returnj['result'])
+    return returnj
+
+
+def _backup_core(core, model, label, result):
+    """Mirror one Solr core into its MySQL backup table (Solr -> MySQL).
+
+    Reads the authoritative documents from Solr — which already carry their
+    Solr-assigned ids and any update-processor-added fields — and upserts each
+    as a JSON blob keyed by id. Upsert-only: documents hard-deleted from Solr
+    are not removed from the backup (acceptable for these low-velocity cores;
+    avoids data loss on a partial read). Isolated per core.
+    """
+    try:
+        total = core.search("*:*", rows=0).raw_response['response']['numFound']
+        docs = core.search("*:*", rows=total + 100).docs if total else []
+        synced = 0
+        for doc in docs:
+            doc.pop('_version_', None)
+            doc_id = doc.get('id')
+            if not doc_id:
+                continue
+            blob = json.dumps(doc)
+            existing = db.session.get(model, doc_id)
+            if existing:
+                existing.value = blob
+            else:
+                db.session.add(model(id=doc_id, value=blob))
+            synced += 1
+        db.session.commit()
+        result[label] = {"success": True, "synced": synced, "solrcount": total}
+    except Exception as err:
+        db.session.rollback()
+        result[label] = {"success": False, "error": str(err)}
+
+
+def solr_to_mysql():
+    # Back up the Solr-primary cores into their MySQL tables for disaster
+    # recovery and reproducible dev/test seeding. Eventually-consistent: intended
+    # to run periodically (e.g. a scheduled job) and/or before a DB backup, not
+    # transactionally on each write. timestamps is excluded (operational log,
+    # not backed by design).
+    returnj = {"result": {}}
+    _backup_core(questions, Questions, "questions", returnj['result'])
+    _backup_core(question_groups, QuestionGroups, "question_groups", returnj['result'])
+    _backup_core(surveys, Surveys, "surveys", returnj['result'])
+    _backup_core(answers, Answers, "answers", returnj['result'])
     return returnj
 
 
