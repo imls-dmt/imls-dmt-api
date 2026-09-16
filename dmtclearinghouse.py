@@ -10,6 +10,7 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text as sqlalchemy_text
 import uuid
 import threading
 import time
@@ -2869,7 +2870,7 @@ def api():
     """
     rulelist = []
     not_protected=["/api/vocabularies/","/api/resources/","/api/feedback/","/api/schema/"]
-    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/surveys/","/api/pub_status/"]
+    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/surveys/","/api/pub_status/","/api/health"]
     print(app.url_map)
     for rule in app.url_map.iter_rules():
         print(rule)
@@ -3679,11 +3680,15 @@ orcid_client = WebApplicationClient(orcid_client_id)
 
 @app.route("/api/orcid_sign_in", methods = ["GET", "POST"])
 def orcid_sign_in():
+    # The callback route carries the originating UI host so the API can send the
+    # user back to the right front end. Prefer the proxy-supplied header, fall
+    # back to the request host, and take only the first entry if several proxies
+    # appended to it. Previously a missing header raised a TypeError (HTTP 500).
+    origin_host = (request.headers.get('X-Forwarded-Host') or request.host or "").split(",")[0].strip()
     request_uri = orcid_client.prepare_request_uri(
         orcid_discovery_url,
-        redirect_uri= orcid_redirect_url+"/"+request.headers.get('X-Forwarded-Host'),
+        redirect_uri= orcid_redirect_url+"/"+origin_host,
         scope="openid",  #use "openid" or "/authenticate"
-        
     )
     return redirect(request_uri)
 
@@ -3797,6 +3802,42 @@ def orcid_callback(origin):
           return {'status':'error','message':"User "+userobj.docs[0]['name']+" has been disabled by admin."}
     
     return ":)" #redirect('/protected')
+
+@app.route("/api/health", methods=["GET"])
+@limiter.exempt
+def health():
+    """
+    GET:
+        Readiness check for uptime monitoring. Verifies that Solr answers for
+        the learningresources core and that MySQL accepts a query. Requires no
+        authentication and touches no user data.
+
+    Returns:
+            JSON {"status": "ok"|"degraded", "solr": "...", "mysql": "..."}
+            HTTP 200 when both dependencies are healthy, 503 otherwise.
+    """
+    checks = {}
+    try:
+        r = requests.get(
+            app.config["SOLR_ADDRESS"] + "admin/cores",
+            params={"action": "STATUS", "core": "learningresources", "wt": "json"},
+            timeout=5,
+        )
+        r.raise_for_status()
+        core = r.json().get("status", {}).get("learningresources", {})
+        checks["solr"] = "ok" if core.get("name") else "learningresources core missing"
+    except Exception as err:
+        checks["solr"] = "error: " + type(err).__name__
+    try:
+        db.session.execute(sqlalchemy_text("SELECT 1"))
+        checks["mysql"] = "ok"
+    except Exception as err:
+        db.session.rollback()
+        checks["mysql"] = "error: " + type(err).__name__
+    healthy = all(v == "ok" for v in checks.values())
+    body = {"status": "ok" if healthy else "degraded", **checks}
+    return body, (200 if healthy else 503)
+
 
 if __name__ == "__main__":
     app.run()
