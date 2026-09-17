@@ -2179,12 +2179,18 @@ def learning_resource(document):
                 'authors.name_identifier','authors.name_identifier_type','citation','contact.name','contact.org','contributor_orgs.name','contributor_orgs.type'
                 ,'contributors.givenName','contributors.familyName','contributors.type','creator','ed_frameworks.name','languages_secondary','media_type','resource_modification_date'
                 ,'publisher','purpose','subject','','target_audience','target_audience','usage_info']}
-                r=requests.get(request.host_url+'/api/resources/?limit=1&facet_limit=-1')
-                facet_json=r.json()
-                r2=requests.get(request.host_url+'/api/vocabularies/')
-                
-
-                vocabularies_json=r2.json()
+                # Build the option lists from Solr directly. This used to issue
+                # HTTP requests to the API's own public hostname, which fails
+                # inside a container (the name resolves to the public front door,
+                # or not at all) and ties up a worker waiting on itself.
+                # Same data as GET /api/resources/?limit=1&facet_limit=-1 for an
+                # anonymous caller (published records) and GET /api/vocabularies/.
+                facet_results = resources.search(
+                    "pub_status:published", rows=1,
+                    **{"facet": "on", "facet.field": resources_facets, "facet.limit": -1},
+                )
+                facet_json = {"facets": fixFacets(facet_results) if "facet_fields" in facet_results.facets else {}}
+                vocabularies_json = {"results": [dict(doc) for doc in taxonomies.search("*:*", rows=1000000)]}
                 
                 #build framework_nodes:
                 framework_nodes={}
