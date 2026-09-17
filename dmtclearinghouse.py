@@ -10,6 +10,7 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text as sqlalchemy_text
 import uuid
 import threading
 import time
@@ -22,6 +23,8 @@ from requests_oauthlib import OAuth2Session
 from feedgen.feed import FeedGenerator
 import sys
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import copy
 
 from flask.sessions import SecureCookieSessionInterface
@@ -37,7 +40,6 @@ sys.path.append("/opt/DMTClearinghouse/")
 # Create flask app
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
-CORS(app,supports_credentials=True)
 session_cookie = SecureCookieSessionInterface().get_signing_serializer(app)
 
 def randomString(stringLength=8):
@@ -46,6 +48,8 @@ def randomString(stringLength=8):
 
 # Pull config info from file
 app.config.from_object('dmtconfig.DevConfig')
+CORS(app, supports_credentials=True, origins=[app.config.get("FRONT_END_URL", "http://localhost")])
+limiter = Limiter(get_remote_address, app=app, default_limits=[])
 
 #Create db object. This will be used for all MySQL actions in this app.
 db = SQLAlchemy(app)
@@ -63,6 +67,30 @@ class Users(db.Model):
     value = db.Column(db.String(16777215))
 
 class Feedback(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+# Backup tables for the cores that were previously Solr-only. Solr stays the
+# primary store; these hold a JSON-blob copy for disaster recovery and to make
+# dev/test seeding reproducible from the MySQL snapshot. Kept in sync by
+# solr_to_mysql() (Solr -> MySQL) rather than transactional dual-write.
+class Questions(db.Model):
+    __tablename__ = 'questions'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class QuestionGroups(db.Model):
+    __tablename__ = 'question_groups'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Surveys(db.Model):
+    __tablename__ = 'surveys'
+    id = db.Column(db.String(36), primary_key=True)
+    value = db.Column(db.String(16777215))
+
+class Answers(db.Model):
+    __tablename__ = 'answers'
     id = db.Column(db.String(36), primary_key=True)
     value = db.Column(db.String(16777215))
 
@@ -105,76 +133,133 @@ drash = drupal_hash_utility.DrupalHashUtility()
 #Admin Functions###
 ###################
 
+def _flatten_solr_doc(doc):
+    """Flatten one level of nested JSON into Solr's dotted field convention.
+
+    Stored MySQL blobs keep nested objects (e.g. author_org={"name":...}) and
+    lists of objects (contributors=[{...},...]), but Solr indexes them as flat
+    dotted fields — author_org.name (scalar), contributors.familyName (a
+    multivalued array, one entry per list element). pysolr's add() would
+    otherwise send a map-valued field to /update and Solr would read it as an
+    atomic-update operation, failing the insert. One level matches the data;
+    no DMTC blob nests deeper.
+    """
+    out = {}
+    for key, value in doc.items():
+        if isinstance(value, dict):
+            for subkey, subval in value.items():
+                out[key + "." + subkey] = subval
+        elif isinstance(value, list) and value and all(isinstance(e, dict) for e in value):
+            subkeys = []
+            for element in value:
+                for subkey in element:
+                    if subkey not in subkeys:
+                        subkeys.append(subkey)
+            for subkey in subkeys:
+                out[key + "." + subkey] = [element.get(subkey, "") for element in value]
+        else:
+            out[key] = value
+    return out
+
+
+def _reindex_core(model, core, label, result):
+    """Rebuild one Solr core from its MySQL backup blobs.
+
+    Unconditionally wipes and repopulates the core from the system-of-record
+    (MySQL), so it works for a fresh/empty Solr (bootstrap) as well as for
+    drift repair. The stored blobs may carry a stale `_version_`; it is stripped
+    to avoid Solr optimistic-concurrency (HTTP 409) conflicts on insert, and
+    nested objects are flattened to match Solr's dotted-field index structure.
+
+    Each core is isolated: a failure here is recorded and does not abort the
+    reindex of the other cores.
+    """
+    try:
+        rows = db.session.query(model).all()
+        docs = []
+        for row in rows:
+            try:
+                doc = json.loads(row.value)
+            except (ValueError, TypeError):
+                continue
+            doc.pop('_version_', None)
+            docs.append(_flatten_solr_doc(doc))
+        core.delete(q='*:*')
+        core.commit()
+        if docs:
+            core.add(docs)
+            core.commit()
+        found = core.search("*:*", rows=0).raw_response['response']['numFound']
+        result[label] = {"success": found == len(docs), "solrcount": found, "sqlcount": len(docs)}
+    except Exception as err:
+        db.session.rollback()
+        result[label] = {"success": False, "error": str(err)}
+
+
 def reindex():
-
-    lrcount=0
-    returnj= json.loads('{"result":{}}')
-
-    Learning_Resources_IDs_count=db.session.query(Learningresources).count()
-    rescount=resources.search("*:*",rows=0)
-    if rescount.raw_response['response']['numFound']==Learning_Resources_IDs_count:
-        resources.delete(q='*:*')
-        test = resources.commit()
-        Learning_Resources_IDs_res=db.session.query(Learningresources).all()
-        Learning_Resources_JSON=[]
-        for doc in Learning_Resources_IDs_res:
-            Learning_Resources_JSON.append(json.loads(doc.value))
-            lrcount=lrcount+1
-        resources.add(Learning_Resources_JSON)
-        test = resources.commit()
-        res=resources.search("*:*",rows=0)
-        if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['learning_resources']={"success":True,"count":lrcount}
-        else:
-            returnj['result']['learning_resources']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
-    else:
-        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Learning_Resources_IDs_count}
-    
-    lrcount=0
-    Users_IDs_count=db.session.query(Users).count()
-    rescount=users.search("*:*",rows=0)
-    if rescount.raw_response['response']['numFound']==Users_IDs_count: 
-        users.delete(q='*:*')
-        test = users.commit()
-        Users_IDs_res=db.session.query(Users).all()
-        Users_IDs_JSON=[]
-        for doc in Users_IDs_res:
-            Users_IDs_JSON.append(json.loads(doc.value))
-            lrcount=lrcount+1
-        users.add(Users_IDs_JSON)
-        test = users.commit()
-        res=users.search("*:*",rows=0)
-        if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['users']={"success":True,"count":lrcount}
-        else:
-            returnj['result']['users']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
-    else:
-        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Users_IDs_count}
+    # Rebuilds the MySQL-backed cores from their backup blobs. Feedback is
+    # intentionally excluded: prod keeps no feedback docs in Solr (the core is
+    # empty there), so indexing it from MySQL would make dev/test diverge from
+    # production. Feedback data is preserved in MySQL.
+    #
+    # The questions/question_groups/surveys/answers cores are kept in MySQL by
+    # solr_to_mysql(); their backup blobs already carry the Solr-assigned ids, so
+    # reindexing from MySQL preserves ids (the live add paths let Solr generate
+    # them). timestamps remains Solr-only by design.
+    returnj = {"result": {}}
+    _reindex_core(Learningresources, resources, "learning_resources", returnj['result'])
+    _reindex_core(Users, users, "users", returnj['result'])
+    _reindex_core(Taxonomies, taxonomies, "taxonomies", returnj['result'])
+    _reindex_core(Questions, questions, "questions", returnj['result'])
+    _reindex_core(QuestionGroups, question_groups, "question_groups", returnj['result'])
+    _reindex_core(Surveys, surveys, "surveys", returnj['result'])
+    _reindex_core(Answers, answers, "answers", returnj['result'])
+    return returnj
 
 
-    lrcount=0
-    Taxonomies_IDs_count=db.session.query(Taxonomies).count()
-    rescount=taxonomies.search("*:*",rows=0)
-    if rescount.raw_response['response']['numFound']==Taxonomies_IDs_count: 
-        taxonomies.delete(q='*:*')
-        test = taxonomies.commit()
-        Taxonomies_IDs_res=db.session.query(Taxonomies).all()
-        Taxonomies_IDs_JSON=[]
-        for doc in Taxonomies_IDs_res:
-            Taxonomies_IDs_JSON.append(json.loads(doc.value))
-            lrcount=lrcount+1
-        taxonomies.add(Taxonomies_IDs_JSON)
-        test = taxonomies.commit()
-        res=taxonomies.search("*:*",rows=0)
-        if res.raw_response['response']['numFound']==lrcount:
-            returnj['result']['taxonomies']={"success":True,"count":lrcount}
-        else:
-            returnj['result']['taxonomies']={"success":False,"solrcount":res.raw_response['response']['numFound'],"sqlcount":lrcount}
-    else:
-        returnj['result']['learning_resources']={"success":False,"solrcount":rescount.raw_response['response']['numFound'],"sqlcount":Taxonomies_IDs_count}
+def _backup_core(core, model, label, result):
+    """Mirror one Solr core into its MySQL backup table (Solr -> MySQL).
+
+    Reads the authoritative documents from Solr — which already carry their
+    Solr-assigned ids and any update-processor-added fields — and upserts each
+    as a JSON blob keyed by id. Upsert-only: documents hard-deleted from Solr
+    are not removed from the backup (acceptable for these low-velocity cores;
+    avoids data loss on a partial read). Isolated per core.
+    """
+    try:
+        total = core.search("*:*", rows=0).raw_response['response']['numFound']
+        docs = core.search("*:*", rows=total + 100).docs if total else []
+        synced = 0
+        for doc in docs:
+            doc.pop('_version_', None)
+            doc_id = doc.get('id')
+            if not doc_id:
+                continue
+            blob = json.dumps(doc)
+            existing = db.session.get(model, doc_id)
+            if existing:
+                existing.value = blob
+            else:
+                db.session.add(model(id=doc_id, value=blob))
+            synced += 1
+        db.session.commit()
+        result[label] = {"success": True, "synced": synced, "solrcount": total}
+    except Exception as err:
+        db.session.rollback()
+        result[label] = {"success": False, "error": str(err)}
 
 
-
+def solr_to_mysql():
+    # Back up the Solr-primary cores into their MySQL tables for disaster
+    # recovery and reproducible dev/test seeding. Eventually-consistent: intended
+    # to run periodically (e.g. a scheduled job) and/or before a DB backup, not
+    # transactionally on each write. timestamps is excluded (operational log,
+    # not backed by design).
+    returnj = {"result": {}}
+    _backup_core(questions, Questions, "questions", returnj['result'])
+    _backup_core(question_groups, QuestionGroups, "question_groups", returnj['result'])
+    _backup_core(surveys, Surveys, "surveys", returnj['result'])
+    _backup_core(answers, Answers, "answers", returnj['result'])
     return returnj
 
 
@@ -184,11 +269,21 @@ def strip_version(doc):
 
 
 
+def _escape_solr(value):
+    # Escape Solr special characters to prevent query injection.
+    # Multi-char operators must come before single-char to avoid double-escaping.
+    value = value.replace('\\', '\\\\')
+    for char in ('+', '-', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '/'):
+        value = value.replace(char, '\\' + char)
+    value = value.replace('&&', '\\&&').replace('||', '\\||')
+    return value
+
+
 def append_searchstring(searchstring, request, name):
-    """ 
+    """
     Appends searchstring for most text searches.
 
-    Parameters: 
+    Parameters:
 
         searcstring (str): Existing search string.
 
@@ -196,14 +291,11 @@ def append_searchstring(searchstring, request, name):
 
         name (str): The name of the parameter we wish to append to the string.
 
-    Returns: 
-    str: Either the appended search string or the original if the validation fails. 
+    Returns:
+    str: Either the appended search string or the original if the validation fails.
     """
     if request.args.get(name):
-        if ":" not in request.args.get(name):
-            return searchstring+" AND "+name+":"+request.args.get(name)
-        else:
-            return searchstring
+        return searchstring + " AND " + name + ":" + _escape_solr(request.args.get(name))
     else:
         return searchstring
 
@@ -2778,7 +2870,7 @@ def api():
     """
     rulelist = []
     not_protected=["/api/vocabularies/","/api/resources/","/api/feedback/","/api/schema/"]
-    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/surveys/","/api/pub_status/"]
+    exclude_routes=["/api/login/","/api/logout/","/api/login_json","/api/logout_json","/api/orcid_sign_in","/api/protected","/api/passwordreset/","/api/user/groups","/api/orcid_sign_in/orcid_callback","/api/admin/urlcheck/","/api/admin/reindex/","/api/admin/tests/","/api/rss","/api/surveys/","/api/pub_status/","/api/health"]
     print(app.url_map)
     for rule in app.url_map.iter_rules():
         print(rule)
@@ -3112,6 +3204,7 @@ def vocabularies(document):
             return{"status":"error","message":"You must be logged in"},400
 
 @app.route("/api/login_json", methods=['POST'])
+@limiter.limit("10/minute")
 def login_json():
     """ 
     POST:
@@ -3143,6 +3236,7 @@ def login_json():
 
 
 @app.route("/api/login/", methods=['GET','POST'])
+@limiter.limit("10/minute")
 def login():
     """ 
     GET:
@@ -3246,6 +3340,7 @@ def send_mail(message,subject,isfrom,isto):
 
 
 @app.route("/api/passwordreset/", methods=['GET','POST'])
+@limiter.limit("5/hour")
 def passwordreset():
     yesterday=datetime.now() - timedelta(days=1)
     if request.method == 'GET':
@@ -3305,6 +3400,7 @@ def user_groups():
 
 
 @app.route("/api/user/<action>", methods=['GET','POST'])
+@limiter.limit("20/hour")
 def user(action):
     if request.method == 'GET':
         if action=="pwreset":
@@ -3383,12 +3479,10 @@ def user(action):
                                 else:
                                     timezone=""
                                 hashpw=drash.encode(randomString(20))
-                                groups=usercontent['groups']
-                                # if current_user.is_authenticated:
-                                #     if "admin" in current_user.groups:
-                                #         groups=usercontent['groups']
-                                # else:
-                                #     groups=["lauth"]
+                                if current_user.is_authenticated and "admin" in current_user.groups:
+                                    groups=usercontent.get('groups', ["lauth"])
+                                else:
+                                    groups=["lauth"]
                                 email=usercontent['email']
                                 name=usercontent['name']
                                 newuuid=str(uuid.uuid4())
@@ -3586,11 +3680,15 @@ orcid_client = WebApplicationClient(orcid_client_id)
 
 @app.route("/api/orcid_sign_in", methods = ["GET", "POST"])
 def orcid_sign_in():
+    # The callback route carries the originating UI host so the API can send the
+    # user back to the right front end. Prefer the proxy-supplied header, fall
+    # back to the request host, and take only the first entry if several proxies
+    # appended to it. Previously a missing header raised a TypeError (HTTP 500).
+    origin_host = (request.headers.get('X-Forwarded-Host') or request.host or "").split(",")[0].strip()
     request_uri = orcid_client.prepare_request_uri(
         orcid_discovery_url,
-        redirect_uri= orcid_redirect_url+"/"+request.headers.get('X-Forwarded-Host'),
+        redirect_uri= orcid_redirect_url+"/"+origin_host,
         scope="openid",  #use "openid" or "/authenticate"
-        
     )
     return redirect(request_uri)
 
@@ -3704,6 +3802,42 @@ def orcid_callback(origin):
           return {'status':'error','message':"User "+userobj.docs[0]['name']+" has been disabled by admin."}
     
     return ":)" #redirect('/protected')
+
+@app.route("/api/health", methods=["GET"])
+@limiter.exempt
+def health():
+    """
+    GET:
+        Readiness check for uptime monitoring. Verifies that Solr answers for
+        the learningresources core and that MySQL accepts a query. Requires no
+        authentication and touches no user data.
+
+    Returns:
+            JSON {"status": "ok"|"degraded", "solr": "...", "mysql": "..."}
+            HTTP 200 when both dependencies are healthy, 503 otherwise.
+    """
+    checks = {}
+    try:
+        r = requests.get(
+            app.config["SOLR_ADDRESS"] + "admin/cores",
+            params={"action": "STATUS", "core": "learningresources", "wt": "json"},
+            timeout=5,
+        )
+        r.raise_for_status()
+        core = r.json().get("status", {}).get("learningresources", {})
+        checks["solr"] = "ok" if core.get("name") else "learningresources core missing"
+    except Exception as err:
+        checks["solr"] = "error: " + type(err).__name__
+    try:
+        db.session.execute(sqlalchemy_text("SELECT 1"))
+        checks["mysql"] = "ok"
+    except Exception as err:
+        db.session.rollback()
+        checks["mysql"] = "error: " + type(err).__name__
+    healthy = all(v == "ok" for v in checks.values())
+    body = {"status": "ok" if healthy else "degraded", **checks}
+    return body, (200 if healthy else 503)
+
 
 if __name__ == "__main__":
     app.run()
