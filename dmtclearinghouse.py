@@ -156,7 +156,16 @@ def _flatten_solr_doc(doc):
                     if subkey not in subkeys:
                         subkeys.append(subkey)
             for subkey in subkeys:
-                out[key + "." + subkey] = [element.get(subkey, "") for element in value]
+                flat = []
+                for element in value:
+                    subval = element.get(subkey, "")
+                    # e.g. ed_frameworks[].nodes is itself a list: one multivalued
+                    # field, not a list of lists (which Solr would reject).
+                    if isinstance(subval, list):
+                        flat.extend(subval)
+                    else:
+                        flat.append(subval)
+                out[key + "." + subkey] = flat
         else:
             out[key] = value
     return out
@@ -434,12 +443,17 @@ def insert_new_resource(j):
     j2 = copy.deepcopy(j)
     j=addFacets(j)
 
-    
-    # db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
+    # Solr indexes nested objects as dotted fields (author_org.name,
+    # contributors.familyName, ...). pysolr >= 3.9 would otherwise send a
+    # map-valued field, which Solr reads as an atomic-update operation and
+    # rejects ("Unknown operation for the an atomic update: name"). Facets are
+    # recomputed on the flat copy so dotted keys are included.
+    solr_doc = addFacets(UpdateFacets(_flatten_solr_doc(j)))
+    solr_doc.pop("_version_", None)
     try:
         db.session.add(Learningresources(id = j['id'], value=json.dumps(j)))
    
-        x=resources.add([j])
+        x=resources.add([solr_doc])
 
         test = resources.commit()
 
@@ -649,10 +663,12 @@ def update_resource(j):
         db.session.query(Learningresources).filter(Learningresources.id == j['id']).update({Learningresources.value:json.dumps(j)}, synchronize_session = False)
 
         j=UpdateFacets(j)
-        result1=resources.search("id:"+j['id'], rows=1)
+        # See insert_new_resource: Solr gets a flattened, re-faceted copy.
+        solr_doc = addFacets(UpdateFacets(_flatten_solr_doc(j)))
+        solr_doc.pop("_version_", None)
         timestamp_status="update"
         try:
-            resources.add([j])
+            resources.add([solr_doc])
             resources.commit()
             db.session.commit()
             add_timestamp(j['id'],timestamp_status,current_user,request)
