@@ -39,6 +39,14 @@ sys.path.append("/opt/DMTClearinghouse/")
 
 # Create flask app
 app = Flask(__name__)
+# The API always sits behind at least one reverse proxy (nginx in the ui
+# container, with Caddy terminating TLS in front of it in production). Trust
+# their forwarding headers so request.scheme and request.host reflect the
+# public URL. Without this, Flask's trailing-slash 308 redirects and every
+# absolute URL it builds (password-reset links, host_url) come out as http://,
+# which a browser on an https page refuses to follow ("Network Error" on logout).
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 app.config['JSON_SORT_KEYS'] = False
 session_cookie = SecureCookieSessionInterface().get_signing_serializer(app)
 
@@ -3716,18 +3724,22 @@ def orcid_sign_in():
 
 @app.route("/api/orcid_sign_in/orcid_callback/<origin>", methods = ["GET", "POST"])
 def orcid_callback(origin):
-    print(origin)
-    request.url=request.url.replace(request.host_url,front_end_url)
-    request.base_url=request.base_url.replace(request.host_url,front_end_url)
     code = request.args.get("code")
-    print(request.args)
+    if not code:
+        return make_response({"status": "error",
+                              "message": "ORCID did not return an authorization code: "
+                                         + str(request.args.get("error", "unknown"))}, 400)
     token_endpoint = orcid_exchange_url
-    # TODO look at documentation for prepare_token_request() and see how a request is made at 
-    # https://members.orcid.org/api/oauth/3legged-oauth
+    # The redirect_uri in the token request must be byte-identical to the one
+    # sent at authorization time (orcid_sign_in), so build it the same way
+    # rather than deriving it from the incoming request. Behind Caddy and nginx
+    # the API sees its own URL as http://<host>/ and the old rewrite with
+    # FRONT_END_URL (no trailing slash) produced "https://www.dmtc-prod.orgapi/...",
+    # which ORCID rejected with invalid_grant.
+    redirect_uri = orcid_redirect_url + "/" + origin
     token_url, headers, body = orcid_client.prepare_token_request(
         token_endpoint,
-        authorization_response=request.url,
-        redirect_url=request.base_url,
+        redirect_url=redirect_uri,
         code=code,
         client_secret = orcid_client_secret
     )
@@ -3738,7 +3750,12 @@ def orcid_callback(origin):
         data=body,
         auth=(orcid_client_id, orcid_client_secret),
     )
-    orcid_client.parse_request_body_response(json.dumps(token_response.json()))
+    try:
+        orcid_client.parse_request_body_response(json.dumps(token_response.json()))
+    except Exception as err:
+        app.logger.error("ORCID token exchange failed (redirect_uri=%s): %s", redirect_uri, err)
+        return make_response({"status": "error",
+                              "message": "ORCID token exchange failed: " + str(err)}, 502)
     orcid_id = token_response.json()['orcid']
     userinfo_endpoint = 'https://pub.orcid.org/v2.1/' + orcid_id +'/record'
     uri, headers, body = orcid_client.add_token(userinfo_endpoint) 
