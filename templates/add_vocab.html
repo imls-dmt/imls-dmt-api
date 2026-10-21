@@ -31,12 +31,19 @@
                     <label for="vocabname">Name</label>
 
 
+                    <p style="margin:0 0 0.25em 0;color:#797979;">Terms (one per box; use the + button to add a term)</p>
                     <div style="cursor: inherit;overflow: auto;height: 323px;" id="valueslist" class="collection" style="cursor: pointer;">
                  
     
                     </div>
-                    <input style="font-size: xx-large;color: teal;" placeholder="" id="vocabtype" type="text" class="validate">
-                    <label for="vocabtype">Type</label>
+                    <!-- Type is a role marker, not a term. It used to be a free-text box
+                         directly under the values list, and new terms were typed into it
+                         (UI issues #77, #88); the API now rejects anything but these two. -->
+                    <label for="vocabtype" style="display:block;margin-top:1em;">Type (leave as "none" unless this vocabulary is an educational framework)</label>
+                    <select id="vocabtype" class="browser-default">
+                        <option value="">none &mdash; an ordinary list of terms</option>
+                        <option value="framework">framework &mdash; the values are the nodes of an educational framework</option>
+                    </select>
                 </div>
                 <div class="card-action">
                     <a id="add" class="btn-floating btn-large waves-effect waves-light red"><i class="material-icons">add</i></a>

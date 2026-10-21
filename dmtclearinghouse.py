@@ -286,6 +286,21 @@ def strip_version(doc):
 
 
 
+# Vocabulary (taxonomy) "type". Only one value has meaning: "framework" marks a
+# vocabulary as an educational framework, whose values are the framework's
+# nodes offered on the submission form. Any other non-empty type was always a
+# data-entry mistake (a term typed into the Type box of the vocabulary editor,
+# UI issues #77 and #88), so writes accept nothing else.
+VOCAB_TYPE_FRAMEWORK = "framework"
+VOCAB_TYPES = ("", VOCAB_TYPE_FRAMEWORK)
+
+
+def _vocab_type(value):
+    """Normalise a submitted vocabulary type; None when it is not allowed."""
+    value = (value or "").strip()
+    return value if value in VOCAB_TYPES else None
+
+
 def _escape_solr(value):
     # Escape Solr special characters to prevent query injection.
     # Multi-char operators must come before single-char to avoid double-escaping.
@@ -2202,8 +2217,12 @@ def learning_resource(document):
                 
                 #build framework_nodes:
                 framework_nodes={}
+                # Only vocabularies typed "framework" are frameworks. This used
+                # to test for any non-empty type, so a vocabulary whose Type box
+                # had been filled by mistake showed up in the Educational
+                # Framework picklist (UI issue #77).
                 for result in  vocabularies_json['results']:
-                    if 'type' in result:
+                    if result.get('type') == VOCAB_TYPE_FRAMEWORK:
                         framework_nodes[result['name']]=result['values']
                       
 
@@ -3187,10 +3206,9 @@ def vocabularies(document):
                     if all(key in vocabjson for key in ("name","values", "id")):
                         if vocabjson['id'] and vocabjson['name'] and vocabjson['values']:
                             #clean it up:
-                            if "type" in vocabjson:
-                                vocabtype=vocabjson['type']
-                            else:
-                                vocabtype=""
+                            vocabtype=_vocab_type(vocabjson.get('type'))
+                            if vocabtype is None:
+                                return{"status":"error","message":"Vocabulary type must be empty or \"framework\"; a new term belongs in the values list, not the Type field."},400
                             newvocabjson={'id':vocabjson['id'],'name':vocabjson['name'],'values':vocabjson['values'],'type':vocabtype}
                             taxonomies.add([newvocabjson])
                             taxonomies.commit()
@@ -3207,8 +3225,11 @@ def vocabularies(document):
                         if vocabjson['name'] and vocabjson['values']:
                             taxresults = taxonomies.search("name:\""+vocabjson['name']+"\"",rows=1)
                             if len(taxresults.docs)==0:
+                                vocabtype=_vocab_type(vocabjson.get('type'))
+                                if vocabtype is None:
+                                    return{"status":"error","message":"Vocabulary type must be empty or \"framework\"; a new term belongs in the values list, not the Type field."},400
                                 newuuid=str(uuid.uuid4())
-                                newvocabjson={'id':newuuid,'name':vocabjson['name'],'values':vocabjson['values']}
+                                newvocabjson={'id':newuuid,'name':vocabjson['name'],'values':vocabjson['values'],'type':vocabtype}
                                 taxonomies.add([newvocabjson])
                                 taxonomies.commit()
                                 
