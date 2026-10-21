@@ -179,7 +179,7 @@ def _flatten_solr_doc(doc):
     return out
 
 
-def _reindex_core(model, core, label, result):
+def _reindex_core(model, core, label, result, normalize=None):
     """Rebuild one Solr core from its MySQL backup blobs.
 
     Unconditionally wipes and repopulates the core from the system-of-record
@@ -200,7 +200,12 @@ def _reindex_core(model, core, label, result):
             except (ValueError, TypeError):
                 continue
             doc.pop('_version_', None)
+            if normalize is not None and normalize(doc):
+                # The blob held a legacy representation; store the normalised
+                # form so API responses (which come from MySQL) match the index.
+                row.value = json.dumps(doc)
             docs.append(_flatten_solr_doc(doc))
+        db.session.commit()
         core.delete(q='*:*')
         core.commit()
         if docs:
@@ -224,8 +229,14 @@ def reindex():
     # reindexing from MySQL preserves ids (the live add paths let Solr generate
     # them). timestamps remains Solr-only by design.
     returnj = {"result": {}}
-    _reindex_core(Learningresources, resources, "learning_resources", returnj['result'])
+    _reindex_core(Learningresources, resources, "learning_resources", returnj['result'], normalize=_normalize_resource)
     _reindex_core(Users, users, "users", returnj['result'])
+    # Vocabularies are Solr-primary. Mirror them into MySQL first when Solr
+    # still has them, so a reindex is a round trip rather than a regression to
+    # whatever the backup table last held (it was a Drupal-era copy with
+    # different ids until the nightly sync started covering taxonomies).
+    if taxonomies.search("*:*", rows=0).raw_response['response']['numFound']:
+        _backup_core(taxonomies, Taxonomies, "taxonomies_backup", returnj['result'], prune=True)
     _reindex_core(Taxonomies, taxonomies, "taxonomies", returnj['result'])
     _reindex_core(Questions, questions, "questions", returnj['result'])
     _reindex_core(QuestionGroups, question_groups, "question_groups", returnj['result'])
@@ -234,19 +245,28 @@ def reindex():
     return returnj
 
 
-def _backup_core(core, model, label, result):
+def _backup_core(core, model, label, result, prune=False):
     """Mirror one Solr core into its MySQL backup table (Solr -> MySQL).
 
     Reads the authoritative documents from Solr — which already carry their
     Solr-assigned ids and any update-processor-added fields — and upserts each
-    as a JSON blob keyed by id. Upsert-only: documents hard-deleted from Solr
-    are not removed from the backup (acceptable for these low-velocity cores;
-    avoids data loss on a partial read). Isolated per core.
+    as a JSON blob keyed by id. Upsert-only by default: documents hard-deleted
+    from Solr are not removed from the backup (acceptable for these
+    low-velocity cores; avoids data loss on a partial read). With prune=True
+    rows whose id is no longer in Solr are deleted, which taxonomies needs:
+    its table started as a Drupal-era copy with different ids, and a reindex
+    from an unpruned table would resurrect those alongside the live ones.
+    Isolated per core.
     """
     try:
         total = core.search("*:*", rows=0).raw_response['response']['numFound']
         docs = core.search("*:*", rows=total + 100).docs if total else []
         synced = 0
+        if prune and docs:
+            live_ids = {d.get('id') for d in docs if d.get('id')}
+            for row in db.session.query(model).all():
+                if row.id not in live_ids:
+                    db.session.delete(row)
         for doc in docs:
             doc.pop('_version_', None)
             doc_id = doc.get('id')
@@ -277,6 +297,7 @@ def solr_to_mysql():
     _backup_core(question_groups, QuestionGroups, "question_groups", returnj['result'])
     _backup_core(surveys, Surveys, "surveys", returnj['result'])
     _backup_core(answers, Answers, "answers", returnj['result'])
+    _backup_core(taxonomies, Taxonomies, "taxonomies", returnj['result'], prune=True)
     return returnj
 
 
@@ -299,6 +320,49 @@ def _vocab_type(value):
     """Normalise a submitted vocabulary type; None when it is not allowed."""
     value = (value or "").strip()
     return value if value in VOCAB_TYPES else None
+
+
+# Three-state yes/no fields on a learning resource. access_cost used to be a
+# Solr boolean that the form submitted as the strings "true"/"false" (so the
+# stored value was a mix of 0/1 numbers and strings, and "false" counted as a
+# fee in the UI: userinterface #52, #78), and credential_status was never
+# submitted at all (#86). Both are now one of three strings, "n/a" meaning
+# unknown, stored identically in the MySQL blob and the Solr string field.
+YES_NO_NA = ("yes", "no", "n/a")
+_YES = {"yes", "y", "true", "t", "1", "fee"}
+_NO = {"no", "n", "false", "f", "0", "no fee"}
+
+
+def _normalize_yes_no(value):
+    """Map a legacy or submitted yes/no value to "yes", "no" or "n/a"."""
+    if value is True:
+        return "yes"
+    if value is False:
+        return "no"
+    if isinstance(value, (int, float)):
+        return "yes" if value else "no"
+    text = str(value if value is not None else "").strip().lower()
+    if text in _YES:
+        return "yes"
+    if text in _NO:
+        return "no"
+    return "n/a"
+
+
+def _normalize_resource(doc):
+    """Apply the field normalisations to a learning-resource document, in place.
+
+    Returns True when anything changed, so the reindex can write a migrated
+    blob back to MySQL.
+    """
+    changed = False
+    for key in ("access_cost", "credential_status"):
+        if key in doc:
+            new = _normalize_yes_no(doc[key])
+            if doc[key] != new:
+                doc[key] = new
+                changed = True
+    return changed
 
 
 def _escape_solr(value):
@@ -462,6 +526,7 @@ def insert_new_resource(j):
     user_info = users.search("id:\""+current_user.id+"\"", rows=1)
     j['submitter_email']=user_info.docs[0]['email']
     j['submitter_name']=user_info.docs[0]['name']
+    _normalize_resource(j)
 
     j2 = copy.deepcopy(j)
     j=addFacets(j)
@@ -515,6 +580,7 @@ def update_resource(j):
     for key in lr: 
         if key not in j:
             j[key]=lr[key]
+    _normalize_resource(j)
     results = resources.search("id:"+j["id"], rows=1)
     doc={}
     if len(results.docs) > 0:
@@ -2166,11 +2232,13 @@ def learning_resource(document):
                     # 'credential_status', 'completion_time'']
 
                 textarea=['access_conditions','abstract_data','citation','accessibility_summary','ed_frameworks.nodes','name_identifier','title','usage_info']
-                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name_identifier","submitter_name","lr_outcomes"]
+                text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name_identifier","submitter_name","lr_outcomes","version"]
                 user_identifier=["authors.name_identifier_type","contributor_orgs.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
                 dates=['resource_modification_date']
-                yn_select=['access_cost']
+                # Rendered as a select whose values are "yes"/"no"; the form's
+                # default "n/a" option is the third state (unknown).
+                yn_select=['access_cost','credential_status']
                 email=['contact.email','submitter_email']
                 select_multiple_facet=["accessibility_features.name"]
                 select_multiple_taxonomy=['languages_secondary','subject']
@@ -2180,7 +2248,7 @@ def learning_resource(document):
                 orgs=['author_org.name','contributor_orgs.name']
                 flexdatalist=['keywords','publisher','ed_frameworks.name','author_names','target_audience']
                 select_single_taxonomy=['language_primary','lr_type','purpose','expertise_level']#['ed_frameworks.nodes.name']
-                yes_no_unknown=["credential_status"]
+                yes_no_unknown=[]  # credential_status moved to yn_select (UI #86)
                 #given_names=['contributors.givenName','authors.givenName']
                 #family_names=['contributors.familyName','authors.familyName']
                 # auto_gen=['authors.familyName','authors.givenName'] created
@@ -2324,11 +2392,11 @@ def learning_resource(document):
                             "element": "select",
                             "options": [{
                                     "key": "Yes",
-                                    "value": True
+                                    "value": "yes"
                                     },
                                     {
                                     "key": "No",
-                                    "value": False
+                                    "value": "no"
                                     }]
                         }
 
@@ -2573,7 +2641,8 @@ def learning_resources(document):
 
     ;;field:{"name":"title","type":"string","example":"DataONE","description":"The title of the learning resource."}
     ;;field:{"name":"url","type":"string","example":"dataoneorg.github.io","description":""}
-    ;;field:{"name":"access_cost","type":"float","example":"1.0","description":""}
+    ;;field:{"name":"access_cost","type":"string","example":"no","description":"yes, no or n/a (unknown)"}
+    ;;field:{"name":"credential_status","type":"string","example":"n/a","description":"yes, no or n/a (unknown)"}
     ;;field:{"name":"submitter_name","type":"string","example":"\\\"Amber E Budden\\\"","description":""}
     ;;field:{"name":"submitter_email","type":"string","example":"example@example.com","description":""}
     ;;field:{"name":"authors.givenName","type":"string","example":"Robert","description":""}
