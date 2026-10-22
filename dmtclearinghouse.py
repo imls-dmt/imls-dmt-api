@@ -357,11 +357,19 @@ def _normalize_resource(doc):
     """
     changed = False
     for key in ("access_cost", "credential_status"):
-        if key in doc:
-            new = _normalize_yes_no(doc[key])
-            if doc[key] != new:
-                doc[key] = new
-                changed = True
+        if key not in doc:
+            continue
+        new = _normalize_yes_no(doc[key])
+        if doc[key] != new:
+            doc[key] = new
+            changed = True
+        # UpdateFacets() copies the value into facet_<key>, and stored blobs
+        # already carry that copy, so keep it in step or the facet keeps the
+        # legacy 0/1/true/false terms.
+        facet_key = "facet_" + key
+        if facet_key in doc and doc[facet_key] != new:
+            doc[facet_key] = new
+            changed = True
     return changed
 
 
