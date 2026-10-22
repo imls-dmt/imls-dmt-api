@@ -373,6 +373,30 @@ def _normalize_resource(doc):
     return changed
 
 
+def _persist_user(doc):
+    """Upsert a user document into the MySQL users table.
+
+    reindex() rebuilds the Solr users core from this table, so every route
+    that changes a user in Solr must also write it here or the change is
+    silently reverted by the next reindex (issue #121). Returns True on
+    success; on failure the session is rolled back and False returned, and
+    the caller reports a database error while Solr already holds the change.
+    """
+    doc = dict(doc)
+    doc.pop('_version_', None)
+    try:
+        row = db.session.get(Users, doc['id'])
+        if row is None:
+            db.session.add(Users(id=doc['id'], value=json.dumps(doc)))
+        else:
+            row.value = json.dumps(doc)
+        db.session.commit()
+        return True
+    except Exception:
+        db.session.rollback()
+        return False
+
+
 def _escape_solr(value):
     # Escape Solr special characters to prevent query injection.
     # Multi-char operators must come before single-char to avoid double-escaping.
@@ -3495,6 +3519,8 @@ def passwordreset():
 
                     users.add([userjson])
                     users.commit()
+                    if not _persist_user(userjson):
+                        return({"status":"error","message":"Database commit failed"})
                     #remove token from mysql
                     tokens_to_delete=db.session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
                     for ttd in tokens_to_delete:
@@ -3751,7 +3777,8 @@ def user(action):
                                     accountinfo['enabled']=usercontent['enabled']
                                 out=users.add([accountinfo])
                                 users.commit()
-                                Users(id=usercontent['id'],value=json.dumps(accountinfo)) 
+                                if not _persist_user(accountinfo):
+                                    return{"status":"error","message":"Database commit failed"},500
                                 return{"status":"success","message":"Account info for "+usercontent['name']+" has been updated"},200
                               
 
