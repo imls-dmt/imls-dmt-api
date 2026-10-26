@@ -349,6 +349,17 @@ def _normalize_yes_no(value):
     return "n/a"
 
 
+DATE_FIELDS = ("published", "resource_modification_date")
+
+
+def _normalize_date(value):
+    """A date input submits YYYY-MM-DD; store the full ISO instant Solr uses."""
+    text = str(value if value is not None else "").strip()
+    if len(text) == 10 and text[4] == "-" and text[7] == "-":
+        return text + "T00:00:00Z"
+    return value
+
+
 def _normalize_resource(doc):
     """Apply the field normalisations to a learning-resource document, in place.
 
@@ -356,6 +367,12 @@ def _normalize_resource(doc):
     blob back to MySQL.
     """
     changed = False
+    for key in DATE_FIELDS:
+        if key in doc:
+            new = _normalize_date(doc[key])
+            if doc[key] != new:
+                doc[key] = new
+                changed = True
     for key in ("access_cost", "credential_status"):
         if key not in doc:
             continue
@@ -371,6 +388,30 @@ def _normalize_resource(doc):
             doc[facet_key] = new
             changed = True
     return changed
+
+
+def _persist_user(doc):
+    """Upsert a user document into the MySQL users table.
+
+    reindex() rebuilds the Solr users core from this table, so every route
+    that changes a user in Solr must also write it here or the change is
+    silently reverted by the next reindex (issue #121). Returns True on
+    success; on failure the session is rolled back and False returned, and
+    the caller reports a database error while Solr already holds the change.
+    """
+    doc = dict(doc)
+    doc.pop('_version_', None)
+    try:
+        row = db.session.get(Users, doc['id'])
+        if row is None:
+            db.session.add(Users(id=doc['id'], value=json.dumps(doc)))
+        else:
+            row.value = json.dumps(doc)
+        db.session.commit()
+        return True
+    except Exception:
+        db.session.rollback()
+        return False
 
 
 def _escape_solr(value):
@@ -518,7 +559,10 @@ def insert_new_resource(j):
     
     j['modification_date']=now_str
     j['created']=now_str
-    j['published']=now_str
+    # 'published' is the resource's publication/broadcast date, entered on the
+    # form (UI #133); it used to be overwritten with the creation time.
+    if not j.get('published'):
+        j['published']=now_str
     j['rating']=0
     j['status']=0
     
@@ -2243,7 +2287,7 @@ def learning_resource(document):
                 text=['locator_type','locator_data','contact.org','contact.name','author_org.name_identifier',"authors.name_identifier","contributor_orgs.name_identifier","submitter_name","lr_outcomes","version"]
                 user_identifier=["authors.name_identifier_type","contributor_orgs.name_identifier_type"]
                 org_identifier=['author_org.name_identifier_type']
-                dates=['resource_modification_date']
+                dates=['resource_modification_date','published']
                 # Rendered as a select whose values are "yes"/"no"; the form's
                 # default "n/a" option is the third state (unknown).
                 yn_select=['access_cost','credential_status']
@@ -2264,7 +2308,7 @@ def learning_resource(document):
                 taxonomy_field=['contributor_orgs.type','contributors.type']
                 taxonomy_select_single_field=['completion_time']
                 
-                custom_labels={'lr_outcomes':'Learning Outcomes','ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL'}
+                custom_labels={'lr_outcomes':'Learning Outcomes','ed_frameworks.name':'Educational Framework Name','subject':'Subject Discipline','abstract_data':'Abstract/Description','lr_type':'Learning Resource Type','authors.givenName':'Author(s) Given/First Name','authors.familyName':'Author(s) Family/Last Name','contributors.familyName':'Contributor(s) Family/Last Name','contributors.givenName':'Contributor(s) Given/First Name','url':'URL','published':'Date of Resource Publication or Broadcast'}
                 taxonomy_keys={'subject':'Subject Disciplines',  'purpose':'Educational Purpose', 'expertise_level':'expertise_level', 'language_primary':'languages', 'languages_secondary':'languages','contributors.givenName':'given_names','authors.givenName':'given_names','authors.familyName':'family_names','contributors.familyName':'family_names','author_org.name':'Organizations','contributor_orgs.name':'Organizations','lr_type':'Learning Resource Types','completion_time':'Completion Timeframes','contributor_orgs.type':'Contributor Types','contributors.type':'Contributor Types','accessibility_features.name':'Accessibility Features'}
                 url=['url']
                 required_obj={
@@ -2276,7 +2320,7 @@ def learning_resource(document):
 
                 ,'Recommended':['author_org.name_identifier','author_org.name_identifier_type','authors.givenName','authors.familyName','author_org.name',
                 'authors.name_identifier','authors.name_identifier_type','citation','contact.name','contact.org','contributor_orgs.name','contributor_orgs.type'
-                ,'contributors.givenName','contributors.familyName','contributors.type','creator','ed_frameworks.name','languages_secondary','media_type','resource_modification_date'
+                ,'contributors.givenName','contributors.familyName','contributors.type','creator','ed_frameworks.name','languages_secondary','media_type','resource_modification_date','published'
                 ,'publisher','purpose','subject','','target_audience','target_audience','usage_info']}
                 # Build the option lists from Solr directly. This used to issue
                 # HTTP requests to the API's own public hostname, which fails
@@ -3495,6 +3539,8 @@ def passwordreset():
 
                     users.add([userjson])
                     users.commit()
+                    if not _persist_user(userjson):
+                        return({"status":"error","message":"Database commit failed"})
                     #remove token from mysql
                     tokens_to_delete=db.session.query(Tokens).filter(Tokens.token == usercontent['token']).all()
                     for ttd in tokens_to_delete:
@@ -3751,7 +3797,8 @@ def user(action):
                                     accountinfo['enabled']=usercontent['enabled']
                                 out=users.add([accountinfo])
                                 users.commit()
-                                Users(id=usercontent['id'],value=json.dumps(accountinfo)) 
+                                if not _persist_user(accountinfo):
+                                    return{"status":"error","message":"Database commit failed"},500
                                 return{"status":"success","message":"Account info for "+usercontent['name']+" has been updated"},200
                               
 
