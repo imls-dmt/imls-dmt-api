@@ -351,6 +351,13 @@ def _normalize_yes_no(value):
 
 DATE_FIELDS = ("published", "resource_modification_date")
 
+# Workflow states a learning resource moves through. `pub_status` is the
+# field the UI and the search routes use; `facet_pub_status` is the exact-string
+# copy Solr facets on, and the boolean `status` / `facet_status` pair is the
+# Drupal-era published flag that /api/rss still filters on.
+PUB_STATUSES = ("in-process", "in-review", "pre-pub-review", "published",
+                "deprecate-request", "deprecated")
+
 
 def _normalize_date(value):
     """A date input submits YYYY-MM-DD; store the full ISO instant Solr uses."""
@@ -387,6 +394,21 @@ def _normalize_resource(doc):
         if facet_key in doc and doc[facet_key] != new:
             doc[facet_key] = new
             changed = True
+    # The Drupal import derived facet_pub_status, status and facet_status from
+    # Drupal's published flag, and later workflow changes on the old server
+    # updated pub_status without touching the copies, so 129 records faceted as
+    # "in-process" while published / deprecated / in review (issue #125). Keep
+    # all three derived from pub_status; this runs on create, update and reindex.
+    pub_status = doc.get("pub_status")
+    if pub_status in PUB_STATUSES:
+        if doc.get("facet_pub_status") != pub_status:
+            doc["facet_pub_status"] = pub_status
+            changed = True
+        published = pub_status == "published"
+        for key in ("status", "facet_status"):
+            if doc.get(key) is not published:
+                doc[key] = published
+                changed = True
     return changed
 
 
